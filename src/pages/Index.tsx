@@ -1,5 +1,4 @@
 import FactCheckResult from "@/components/FactCheckResult";
-
 import TikTokInput from "@/components/TikTokInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -19,6 +18,7 @@ import {
 } from "@/services/api";
 import { AlertCircle, ArrowDown, HelpCircle } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { toast, Toaster } from "sonner";
 
 const Index = () => {
@@ -138,73 +138,81 @@ const Index = () => {
     }
   };
 
+  const handleImpressumClick = () => {
+    // Track when a user clicks on the Impressum link
+    posthog.capture("impressum_click", {
+      source: "footer",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       <Toaster position="top-center" />
 
-      <div className="max-w-4xl mx-auto space-y-10 py-8 px-4">
-        <header className="text-center space-y-4">
-          <div className="flex justify-center mb-4 ">
+      <div className="max-w-4xl mx-auto space-y-6 md:space-y-10 py-6 md:py-8 px-4">
+        <header className="text-center space-y-3 md:space-y-4">
+          <div className="flex justify-center mb-3 md:mb-4">
             <img
               src="/schule.png"
               alt="Ernst-Schering-Schule Logo"
-              className="h-28 w-auto rounded-lg bg-gray-400 p-4"
+              className="h-20 md:h-28 w-auto rounded-lg bg-gray-400 p-3 md:p-4"
             />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
+          <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
             FaktenChecken
           </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
             Überprüfe was du auf TikTok siehst und lerne, was wahr ist!
           </p>
-          <p className="text-xs text-muted-foreground mt-2">
+          <p className="text-xs text-muted-foreground mt-1 md:mt-2 px-4">
             Ein Bildungstool für Schüler, um kritisches Denken zu fördern. Eine
-            Kooperation mit Stephan Borchardt von der Ernst Scheering Schule.
+            Kooperation mit dem Schulsozialarbeiter Stephan Borchardt von der
+            Ernst-Schering-Schule.
           </p>
         </header>
 
         {!factCheckData && !isLoading && (
           <>
             <Card className="border-none shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-2xl">
+              <CardHeader className="pb-2 md:pb-4">
+                <CardTitle className="text-xl md:text-2xl">
                   Warum ist Faktencheck wichtig?
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-lg">
+              <CardContent className="space-y-3 md:space-y-4">
+                <p className="text-base md:text-lg">
                   Hey! In TikTok gibt es täglich Millionen neuer Videos - aber
                   nicht alle zeigen die Wahrheit. Mit diesem Tool kannst du
                   herausfinden, ob das, was du siehst, wirklich stimmt.
                 </p>
 
-                <div className="grid md:grid-cols-2 gap-6 mt-4">
-                  <div className="bg-blue-50 p-4 rounded-lg flex flex-col items-center text-center">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mt-3 md:mt-4">
+                  <div className="bg-blue-50 p-3 md:p-4 rounded-lg flex flex-col items-center text-center">
                     <div className="h-10 w-10 mb-2 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
-                      <HelpCircle className="h-6 w-6" />
+                      <HelpCircle className="h-5 md:h-6 w-5 md:w-6" />
                     </div>
-                    <h3 className="font-medium text-lg mb-2">
+                    <h3 className="font-medium text-base md:text-lg mb-1 md:mb-2">
                       Warum ist das wichtig?
                     </h3>
-                    <p>
+                    <p className="text-sm md:text-base">
                       Falsche Informationen können zu falschen Entscheidungen
                       führen. Wenn du weißt, was wahr ist, kannst du bessere
                       Entscheidungen treffen.
                     </p>
                   </div>
 
-                  <div className="bg-purple-50 p-4 rounded-lg flex flex-col items-center text-center">
+                  <div className="bg-purple-50 p-3 md:p-4 rounded-lg flex flex-col items-center text-center">
                     <div className="h-10 w-10 mb-2 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
                       <img
                         src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/ChatGPT_logo.svg/1024px-ChatGPT_logo.svg.png"
                         alt="ChatGPT Logo"
-                        className="h-6 w-6"
+                        className="h-5 md:h-6 w-5 md:w-6"
                       />
                     </div>
-                    <h3 className="font-medium text-lg mb-2">
+                    <h3 className="font-medium text-base md:text-lg mb-1 md:mb-2">
                       So einfach geht's
                     </h3>
-                    <p>
+                    <p className="text-sm md:text-base">
                       Du kopierst einfach den Link eines TikTok-Videos und
                       unsere KI überprüft, ob die Informationen darin richtig
                       sind.
@@ -215,62 +223,68 @@ const Index = () => {
             </Card>
 
             <Card className="border-none shadow-lg bg-white">
-              <CardHeader>
-                <CardTitle className="text-2xl">
+              <CardHeader className="pb-2 md:pb-4">
+                <CardTitle className="text-xl md:text-2xl">
                   So findest du den TikTok-Link
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold">
+              <CardContent className="space-y-4 md:space-y-6">
+                <div className="space-y-2 md:space-y-3">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold text-sm">
                       1
                     </div>
                     <div>
-                      <h3 className="font-medium">
+                      <h3 className="font-medium text-sm md:text-base">
                         Öffne TikTok und finde das Video
                       </h3>
-                      <p className="text-muted-foreground">
+                      <p className="text-muted-foreground text-xs md:text-sm">
                         Suche das Video, das du überprüfen möchtest
                       </p>
                     </div>
                   </div>
 
-                  <ArrowDown className="h-6 w-6 mx-auto text-gray-400" />
+                  <ArrowDown className="h-5 w-5 mx-auto text-gray-400" />
 
-                  <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold text-sm">
                       2
                     </div>
                     <div>
-                      <h3 className="font-medium">Drücke auf "Teilen"</h3>
-                      <p className="text-muted-foreground">
+                      <h3 className="font-medium text-sm md:text-base">
+                        Drücke auf "Teilen"
+                      </h3>
+                      <p className="text-muted-foreground text-xs md:text-sm">
                         Tippe auf den Pfeil-Button rechts im Video
                       </p>
                     </div>
                   </div>
 
-                  <ArrowDown className="h-6 w-6 mx-auto text-gray-400" />
+                  <ArrowDown className="h-5 w-5 mx-auto text-gray-400" />
 
-                  <div className="flex items-start gap-4">
-                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold">
+                  <div className="flex items-start gap-3 md:gap-4">
+                    <div className="bg-blue-100 rounded-full p-2 text-blue-700 font-bold text-sm">
                       3
                     </div>
                     <div>
-                      <h3 className="font-medium">Kopiere den Link</h3>
-                      <p className="text-muted-foreground">
+                      <h3 className="font-medium text-sm md:text-base">
+                        Kopiere den Link
+                      </h3>
+                      <p className="text-muted-foreground text-xs md:text-sm">
                         Tippe auf "Link kopieren" und füge ihn hier ein
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-6 p-4 border border-blue-100 rounded-lg bg-blue-50">
-                  <div className="flex items-center gap-2 mb-2">
-                    <HelpCircle className="h-5 w-5 text-blue-600" />
-                    <span className="font-medium">Hilfreicher Tipp:</span>
+                <div className="mt-4 md:mt-6 p-3 md:p-4 border border-blue-100 rounded-lg bg-blue-50">
+                  <div className="flex items-center gap-2 mb-1 md:mb-2">
+                    <HelpCircle className="h-4 md:h-5 w-4 md:w-5 text-blue-600" />
+                    <span className="font-medium text-sm md:text-base">
+                      Hilfreicher Tipp:
+                    </span>
                   </div>
-                  <p>
+                  <p className="text-xs md:text-sm">
                     Der Link sollte so aussehen:
                     https://www.tiktok.com/@username/video/1234567890...
                   </p>
@@ -280,11 +294,13 @@ const Index = () => {
           </>
         )}
 
-        <main className="space-y-8 flex flex-col items-center">
+        <main className="space-y-6 md:space-y-8 flex flex-col items-center">
           <Card className="w-full max-w-xl border-none shadow-lg bg-white">
-            <CardHeader>
-              <CardTitle>Video analysieren</CardTitle>
-              <CardDescription>
+            <CardHeader className="pb-2 md:pb-4">
+              <CardTitle className="text-xl md:text-2xl">
+                Video analysieren
+              </CardTitle>
+              <CardDescription className="text-xs md:text-sm">
                 Füge einen TikTok-Link ein, um den Inhalt zu überprüfen
               </CardDescription>
             </CardHeader>
@@ -293,8 +309,8 @@ const Index = () => {
 
               {isLoading && progress > 0 && (
                 <div className="mt-4 space-y-2">
-                  <Progress value={progress} className="h-2" />
-                  <p className="text-sm text-center text-muted-foreground">
+                  <Progress value={progress} className="h-1.5 md:h-2" />
+                  <p className="text-xs md:text-sm text-center text-muted-foreground">
                     {getProgressMessage(progress)}
                   </p>
                 </div>
@@ -304,7 +320,9 @@ const Index = () => {
                 <Alert variant="destructive" className="mt-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Fehler</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                  <AlertDescription className="text-xs md:text-sm">
+                    {error}
+                  </AlertDescription>
                 </Alert>
               )}
             </CardContent>
@@ -320,15 +338,19 @@ const Index = () => {
           )}
         </main>
 
-        <Separator className="my-8" />
+        <Separator className="my-4 md:my-8" />
 
-        <footer className="text-center text-sm text-muted-foreground mt-10 space-y-2">
+        <footer className="text-center text-xs md:text-sm text-muted-foreground mt-6 md:mt-10 space-y-1 md:space-y-2">
           <p>© 2025 FaktenChecken. Alle Rechte vorbehalten.</p>
 
-          <p className="text-xs mt-2">
-            <a href="/impressum" className="text-blue-600 hover:underline">
+          <p className="text-xs mt-1 md:mt-2">
+            <Link
+              to="/impressum"
+              className="text-blue-600 hover:underline"
+              onClick={handleImpressumClick}
+            >
               Impressum
-            </a>
+            </Link>
           </p>
         </footer>
       </div>

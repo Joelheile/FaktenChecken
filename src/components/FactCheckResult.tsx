@@ -151,19 +151,22 @@ const FactCheckResult = ({
       return (
         <div
           key={`followup-${sectionIdx}`}
-          className="mt-6 pt-4 border-t border-blue-200"
+          className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-blue-200"
         >
-          <div className="bg-blue-50 p-3 rounded-md mb-3">
-            <p className="font-medium text-blue-800">
-              <MessageCircle className="h-4 w-4 inline mr-2" />
+          <div className="bg-blue-50 p-2 md:p-3 rounded-md mb-2 md:mb-3">
+            <p className="font-medium text-blue-800 text-sm md:text-base">
+              <MessageCircle className="h-3 md:h-4 w-3 md:w-4 inline mr-1 md:mr-2" />
               Frage: {question}
             </p>
           </div>
-          <div className="bg-gray-50 p-3 rounded-md">
+          <div className="bg-gray-50 p-2 md:p-3 rounded-md">
             <ReactMarkdown
               components={{
                 p: ({ node, ...props }) => (
-                  <p className="prose prose-sm max-w-none my-2" {...props} />
+                  <p
+                    className="prose prose-sm max-w-none my-1 md:my-2 text-xs md:text-sm"
+                    {...props}
+                  />
                 ),
               }}
             >
@@ -179,25 +182,25 @@ const FactCheckResult = ({
 
   if (isLoading && (!transcript || !factCheck)) {
     return (
-      <div className="w-full max-w-xl space-y-6">
+      <div className="w-full max-w-xl space-y-4 md:space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Transkript</CardTitle>
+          <CardHeader className="pb-2 md:pb-6">
+            <CardTitle className="text-lg md:text-xl">Transkript</CardTitle>
           </CardHeader>
           <CardContent>
-            <Skeleton className="w-full h-24" />
+            <Skeleton className="w-full h-16 md:h-24" />
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Faktencheck</CardTitle>
+          <CardHeader className="pb-2 md:pb-6">
+            <CardTitle className="text-lg md:text-xl">Faktencheck</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              <Skeleton className="w-full h-8" />
-              <Skeleton className="w-5/6 h-8" />
-              <Skeleton className="w-4/6 h-8" />
+            <div className="space-y-1 md:space-y-2">
+              <Skeleton className="w-full h-6 md:h-8" />
+              <Skeleton className="w-5/6 h-6 md:h-8" />
+              <Skeleton className="w-4/6 h-6 md:h-8" />
             </div>
           </CardContent>
         </Card>
@@ -214,28 +217,28 @@ const FactCheckResult = ({
   const followupQuestions = formatFollowupQuestions(factCheck);
 
   return (
-    <div className="w-full max-w-xl space-y-6">
+    <div className="w-full max-w-xl space-y-4 md:space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Transkript</CardTitle>
+        <CardHeader className="pb-2 md:pb-6">
+          <CardTitle className="text-lg md:text-xl">Transkript</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm">{transcript}</p>
+          <p className="text-xs md:text-sm">{transcript}</p>
         </CardContent>
       </Card>
 
       {/* Verdict Card with big indicator */}
       <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
+        <CardHeader className="pb-2 md:pb-6">
+          <CardTitle className="flex items-center gap-1 md:gap-2 text-lg md:text-xl">
             <span>Ergebnis des Faktenchecks</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col items-center text-center mb-4">
+          <div className="flex flex-col items-center text-center mb-3 md:mb-4">
             <div
               className={cn(
-                "w-full max-w-sm py-6 rounded-lg font-bold text-3xl flex items-center justify-center mb-4",
+                "w-full max-w-sm py-4 md:py-6 rounded-lg font-bold text-xl md:text-3xl flex items-center justify-center mb-3 md:mb-4",
                 verdict === "WAHR"
                   ? "bg-green-100 text-green-700"
                   : verdict === "FALSCH"
@@ -243,88 +246,103 @@ const FactCheckResult = ({
                     : "bg-yellow-100 text-yellow-700"
               )}
             >
-              {verdict === "WAHR" && <CheckCircle2 className="h-8 w-8 mr-2" />}
-              {verdict === "FALSCH" && <XCircle className="h-8 w-8 mr-2" />}
+              {verdict === "WAHR" && (
+                <CheckCircle2 className="h-6 md:h-8 w-6 md:w-8 mr-1 md:mr-2" />
+              )}
+              {verdict === "FALSCH" && (
+                <XCircle className="h-6 md:h-8 w-6 md:w-8 mr-1 md:mr-2" />
+              )}
               {verdict}
             </div>
-            <div className="text-lg p-4 bg-slate-50 rounded-lg">
-              {simpleExplanation}
+            <div className="text-base md:text-lg p-3 md:p-4 bg-slate-50 rounded-lg">
+              <p>{simpleExplanation}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Detailed Analysis */}
-      <Card className="border-primary/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <span>Ausführliche Faktencheck-Analyse</span>
-            {!isLoading && hasFollowup && (
-              <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
-                +Folgetragen beantwortet
-              </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="prose prose-sm max-w-none">
-            <ReactMarkdown
-              components={{
-                p: ({ node, ...props }) => <p className="my-2" {...props} />,
-                strong: ({ node, ...props }) => (
-                  <strong className="font-bold" {...props} />
-                ),
-                h3: ({ node, ...props }) => (
-                  <h3 className="text-lg font-bold mt-4 mb-2" {...props} />
-                ),
-              }}
-            >
-              {mainFactCheck}
-            </ReactMarkdown>
-            {followupQuestions}
+          <div className="mt-4 md:mt-6 rounded-lg">
+            <details>
+              <summary className="cursor-pointer text-sm md:text-base font-medium p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                Vollständige Analyse anzeigen
+              </summary>
+              <div className="mt-2 md:mt-3 p-2 md:p-3 bg-slate-50 rounded-lg text-xs md:text-sm">
+                <ReactMarkdown
+                  components={{
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="mt-2 md:mt-3 prose-sm max-w-none"
+                        {...props}
+                      />
+                    ),
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        className="mt-2 md:mt-3 list-disc pl-4 md:pl-5"
+                        {...props}
+                      />
+                    ),
+                    li: ({ node, ...props }) => (
+                      <li className="mt-1 md:mt-2" {...props} />
+                    ),
+                    h1: ({ node, ...props }) => (
+                      <h1
+                        className="text-base md:text-lg font-bold mt-3 md:mt-4 mb-1 md:mb-2"
+                        {...props}
+                      />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <h2
+                        className="text-sm md:text-base font-bold mt-3 md:mt-4 mb-1 md:mb-2"
+                        {...props}
+                      />
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3
+                        className="text-sm md:text-base font-semibold mt-2 md:mt-3 mb-1 md:mb-2"
+                        {...props}
+                      />
+                    ),
+                  }}
+                >
+                  {mainFactCheck}
+                </ReactMarkdown>
+              </div>
+            </details>
           </div>
-        </CardContent>
-      </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            <span>Rückfragen an ChatGPT</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Alert variant="info" className="mb-4">
-            <HelpCircle className="h-4 w-4" />
-            <AlertDescription>
-              Du kannst weitere Fragen zum Faktencheck stellen. ChatGPT behält
-              den Kontext früherer Fragen bei.
-            </AlertDescription>
-          </Alert>
+          {followupQuestions}
 
-          <form onSubmit={handleFollowupSubmit} className="space-y-4">
-            <Textarea
-              placeholder="Stelle eine Frage zu diesem Faktencheck..."
-              value={followupQuestion}
-              onChange={(e) => setFollowupQuestion(e.target.value)}
-              className="min-h-[100px]"
-              disabled={isSubmitting}
-            />
-            <div className="flex justify-end">
+          <form onSubmit={handleFollowupSubmit} className="mt-5 md:mt-6">
+            <div className="space-y-2 md:space-y-3">
+              <p className="text-sm md:text-base font-medium flex items-center">
+                <HelpCircle className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2" />
+                Stelle eine Frage zu diesem Video
+              </p>
+              <Textarea
+                placeholder="Zum Beispiel: Was bedeutet...? Ist es wahr, dass...?"
+                value={followupQuestion}
+                onChange={(e) => setFollowupQuestion(e.target.value)}
+                rows={3}
+                className="w-full min-h-24 p-2 md:p-3 text-xs md:text-sm"
+              />
               <Button
                 type="submit"
-                disabled={isSubmitting}
-                className={cn("transition-all", isMobile ? "w-full" : "")}
+                disabled={isSubmitting || !followupQuestion.trim()}
+                className="w-full"
               >
                 {isSubmitting ? (
                   <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" />
-                    Sende...
+                    <Loader className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2 animate-spin" />
+                    Frage wird beantwortet...
                   </>
                 ) : (
-                  "Frage senden"
+                  "Frage stellen"
                 )}
               </Button>
+              <Alert className="bg-blue-50 border-blue-100 mt-2 md:mt-3">
+                <AlertDescription className="text-xs md:text-sm text-blue-700">
+                  Du kannst mehrere Fragen stellen, um mehr über das Thema zu
+                  erfahren.
+                </AlertDescription>
+              </Alert>
             </div>
           </form>
         </CardContent>
