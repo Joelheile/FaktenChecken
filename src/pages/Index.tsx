@@ -117,23 +117,38 @@ const Index = () => {
     });
 
     try {
-      const answer = await askFollowupQuestion(question);
+      // Check if this question already exists in the factCheck data (case insensitive)
+      const questionExists =
+        factCheckData &&
+        factCheckData.factCheck
+          .toLowerCase()
+          .includes(
+            `--- folgende frage ---\n\n${question.toLowerCase().trim()}\n\n`
+          );
 
-      if (factCheckData) {
-        setFactCheckData({
-          ...factCheckData,
-          factCheck:
-            factCheckData.factCheck +
-            "\n\n--- Folgende Frage ---\n\n" +
-            question +
-            "\n\n" +
-            answer,
-        });
+      // Only proceed if the question doesn't already exist
+      if (!questionExists) {
+        const answer = await askFollowupQuestion(question);
 
-        // Track successful followup answer
-        posthog.capture("followup_question_answered", {
-          success: true,
-        });
+        if (factCheckData) {
+          setFactCheckData({
+            ...factCheckData,
+            factCheck:
+              factCheckData.factCheck +
+              "\n\n--- Folgende Frage ---\n\n" +
+              question +
+              "\n\n" +
+              answer,
+          });
+
+          // Track successful followup answer
+          posthog.capture("followup_question_answered", {
+            success: true,
+          });
+        }
+      } else {
+        // If question exists, just notify user
+        toast.info("Diese Frage wurde bereits beantwortet.");
       }
     } catch (error) {
       console.error("Error asking followup:", error);
@@ -199,7 +214,7 @@ const Index = () => {
         </header>
 
         {/* Main Input Section - Always visible */}
-        <div className="sticky top-4 z-10">
+        <div className="sticky top-4 z-5">
           <Card className="w-full max-w-3xl mx-auto border-none shadow-xl bg-white/90 backdrop-blur-sm dark:bg-gray-900/90 transition-all duration-300 hover:shadow-blue-200/20">
             <CardHeader className="pb-2 md:pb-4">
               <CardTitle className="text-xl md:text-2xl flex items-center gap-2">

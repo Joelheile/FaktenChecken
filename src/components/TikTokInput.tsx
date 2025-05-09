@@ -56,7 +56,7 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
         <div className="flex flex-col md:flex-row gap-2">
           <Input
             id="tiktok-url"
-            placeholder="https://www.tiktok.com/... oder https://vm.tiktok.com/..."
+            placeholder="https://www.tiktok.com/"
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1 text-xs md:text-sm h-8 md:h-10"

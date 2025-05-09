@@ -7,6 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 import {
   CheckCircle2,
+  ChevronDown,
   HelpCircle,
   Loader,
   MessageCircle,
@@ -30,6 +31,7 @@ const FactCheckResult = ({
 }: FactCheckResultProps) => {
   const [followupQuestion, setFollowupQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const handleFollowupSubmit = async (e: React.FormEvent) => {
@@ -144,40 +146,83 @@ const FactCheckResult = ({
     const parts = text.split("--- Folgende Frage ---");
 
     // We only want the followup parts, not the main check
-    const followups = parts.slice(1).map((followupSection, sectionIdx) => {
-      const [question, ...answerParts] = followupSection.trim().split("\n\n");
-      const answer = answerParts.join("\n\n");
+    const processedQuestions = new Set();
+    const followups = parts
+      .slice(1)
+      .map((followupSection, sectionIdx) => {
+        const [question, ...answerParts] = followupSection.trim().split("\n\n");
+        const answer = answerParts.join("\n\n");
 
-      return (
-        <div
-          key={`followup-${sectionIdx}`}
-          className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-blue-200"
-        >
-          <div className="bg-blue-50 p-2 md:p-3 rounded-md mb-2 md:mb-3">
-            <p className="font-medium text-blue-800 text-sm md:text-base">
-              <MessageCircle className="h-3 md:h-4 w-3 md:w-4 inline mr-1 md:mr-2" />
-              Frage: {question}
-            </p>
+        // Skip duplicate questions (case insensitive)
+        const questionKey = question.toLowerCase().trim();
+        if (processedQuestions.has(questionKey)) {
+          return null;
+        }
+        processedQuestions.add(questionKey);
+
+        return (
+          <div
+            key={`followup-${sectionIdx}`}
+            className="mt-4 md:mt-6 pt-3 md:pt-4 border-t border-blue-200"
+          >
+            <div className="bg-blue-50 p-2 md:p-3 rounded-md mb-2 md:mb-3">
+              <p className="font-medium text-blue-800 text-sm md:text-base">
+                <MessageCircle className="h-3 md:h-4 w-3 md:w-4 inline mr-1 md:mr-2" />
+                Frage: {question}
+              </p>
+            </div>
+            <div className="bg-gray-50 p-2 md:p-3 rounded-md">
+              <ReactMarkdown
+                components={{
+                  p: ({ node, ...props }) => (
+                    <p
+                      className="prose prose-sm max-w-none my-1 md:my-2 text-xs md:text-sm"
+                      {...props}
+                    />
+                  ),
+                }}
+              >
+                {answer}
+              </ReactMarkdown>
+            </div>
           </div>
-          <div className="bg-gray-50 p-2 md:p-3 rounded-md">
-            <ReactMarkdown
-              components={{
-                p: ({ node, ...props }) => (
-                  <p
-                    className="prose prose-sm max-w-none my-1 md:my-2 text-xs md:text-sm"
-                    {...props}
-                  />
-                ),
-              }}
-            >
-              {answer}
-            </ReactMarkdown>
-          </div>
-        </div>
-      );
-    });
+        );
+      })
+      .filter(Boolean); // Remove null entries (duplicates)
 
     return followups.length > 0 ? followups : null;
+  };
+
+  // Format colored claim boxes for statements in the analysis
+  const formatClaimText = (text: string) => {
+    // Format Behauptung 1: etc with colored labels
+    const formattedText = text.replace(
+      /(Behauptung \d+:)(.+?)(Bewertung:)(.+?)(Warum:)/gs,
+      (match, behauptungLabel, claim, bewertungLabel, verdict, warumLabel) => {
+        const trimmedVerdict = verdict.trim().toLowerCase();
+        const verdictClass =
+          trimmedVerdict.includes("wahr") && !trimmedVerdict.includes("falsch")
+            ? "bg-green-50 border-green-200 text-green-800"
+            : trimmedVerdict.includes("falsch")
+              ? "bg-red-50 border-red-200 text-red-800"
+              : trimmedVerdict.includes("teils")
+                ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                : "bg-blue-50 border-blue-200 text-blue-800";
+
+        return `<div class="border rounded-md p-3 mb-4 ${verdictClass}">
+          <div class="font-bold mb-1">${behauptungLabel}</div>
+          <div class="mb-2">${claim}</div>
+          <div class="font-bold mb-1">${bewertungLabel}</div>
+          <div class="mb-2 font-semibold">${verdict}</div>
+          <div class="font-bold mb-1">${warumLabel}</div>`;
+      }
+    );
+
+    // Close the div tags
+    return formattedText.replace(
+      /(?<!(Behauptung \d+:)(.+?)(Bewertung:)(.+?)(Warum:))(Behauptung \d+:)/gs,
+      '</div><div class="border rounded-md p-3 mb-4 bg-gray-50 border-gray-200">$1'
+    );
   };
 
   // Check if transcript is empty
@@ -219,24 +264,40 @@ const FactCheckResult = ({
   const mainFactCheck = factCheck.split("--- Folgende Frage ---")[0];
   const followupQuestions = formatFollowupQuestions(factCheck);
 
+  // Format the factcheck with colored claim boxes
+  const formattedFactCheck = formatClaimText(mainFactCheck);
+
   return (
     <div className="w-full max-w-xl space-y-4 md:space-y-6">
       <Card>
-        <CardHeader className="pb-2 md:pb-6">
-          <CardTitle className="text-lg md:text-xl">Transkript</CardTitle>
+        <CardHeader
+          className="pb-2 md:pb-6 cursor-pointer"
+          onClick={() => setIsTranscriptOpen(!isTranscriptOpen)}
+        >
+          <CardTitle className="text-lg md:text-xl flex justify-between items-center">
+            <span>Transkript</span>
+            <ChevronDown
+              className={`h-5 w-5 transition-transform ${isTranscriptOpen ? "transform rotate-180" : ""}`}
+            />
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          {isEmptyTranscript ? (
-            <div className="flex items-center justify-center p-4 bg-red-50 rounded-md">
-              <XCircle className="h-4 w-4 text-red-500 mr-2" />
-              <p className="text-sm font-medium text-red-500">
-                Kein Text im Video gefunden
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs md:text-sm">{transcript}</p>
-          )}
-        </CardContent>
+        {isTranscriptOpen && (
+          <CardContent>
+            {isEmptyTranscript ? (
+              <div className="flex flex-col items-center justify-center p-6 md:p-8 bg-gray-50 rounded-lg">
+                <XCircle className="h-12 w-12 text-red-500 mb-3" />
+                <p className="text-xl md:text-2xl font-bold text-red-500 text-center mb-2">
+                  Kein Transkript vorhanden
+                </p>
+                <p className="text-sm md:text-base text-gray-600 text-center">
+                  Es gibt keinen Text im Video, der ausgewertet werden kann.
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs md:text-sm">{transcript}</p>
+            )}
+          </CardContent>
+        )}
       </Card>
 
       {/* Verdict Card with big indicator */}
@@ -266,61 +327,72 @@ const FactCheckResult = ({
               )}
               {verdict}
             </div>
-            <div className="text-base md:text-lg p-3 md:p-4 bg-slate-50 rounded-lg">
+            <div className="text-base md:text-lg p-3 md:p-4 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-100 rounded-lg shadow-sm">
               <p>{simpleExplanation}</p>
             </div>
           </div>
 
-          {!isEmptyTranscript && (
-            <div className="mt-4 md:mt-6 rounded-lg">
-              <details>
-                <summary className="cursor-pointer text-sm md:text-base font-medium p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                  Vollständige Analyse anzeigen
-                </summary>
-                <div className="mt-2 md:mt-3 p-2 md:p-3 bg-slate-50 rounded-lg text-xs md:text-sm">
-                  <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => (
-                        <p
-                          className="mt-2 md:mt-3 prose-sm max-w-none"
-                          {...props}
-                        />
-                      ),
-                      ul: ({ node, ...props }) => (
-                        <ul
-                          className="mt-2 md:mt-3 list-disc pl-4 md:pl-5"
-                          {...props}
-                        />
-                      ),
-                      li: ({ node, ...props }) => (
-                        <li className="mt-1 md:mt-2" {...props} />
-                      ),
-                      h1: ({ node, ...props }) => (
-                        <h1
-                          className="text-base md:text-lg font-bold mt-3 md:mt-4 mb-1 md:mb-2"
-                          {...props}
-                        />
-                      ),
-                      h2: ({ node, ...props }) => (
+          <div className="mt-4 md:mt-6 bg-white rounded-lg border border-slate-200 shadow-sm">
+            <div className="p-4 md:p-6">
+              <h2 className="text-lg md:text-xl font-semibold mb-4 text-slate-800">
+                Analyse des Videos
+              </h2>
+
+              <div className="space-y-4 md:space-y-6">
+                <ReactMarkdown
+                  components={{
+                    p: ({ node, ...props }) => (
+                      <p
+                        className="text-sm md:text-base text-slate-600"
+                        {...props}
+                      />
+                    ),
+                    ul: ({ node, ...props }) => (
+                      <ul
+                        className="mt-2 list-disc pl-5 text-slate-600"
+                        {...props}
+                      />
+                    ),
+                    li: ({ node, ...props }) => (
+                      <li className="mt-1 text-sm md:text-base" {...props} />
+                    ),
+                    h1: ({ node, ...props }) => (
+                      <h1
+                        className="text-lg md:text-xl font-bold mt-4 mb-2 text-slate-800"
+                        {...props}
+                      />
+                    ),
+                    h2: ({ node, ...props }) => (
+                      <div className="mt-4 mb-2">
                         <h2
-                          className="text-sm md:text-base font-bold mt-3 md:mt-4 mb-1 md:mb-2"
+                          className="text-base md:text-lg font-semibold text-slate-800 bg-slate-50 p-2 rounded-md"
                           {...props}
                         />
-                      ),
-                      h3: ({ node, ...props }) => (
-                        <h3
-                          className="text-sm md:text-base font-semibold mt-2 md:mt-3 mb-1 md:mb-2"
-                          {...props}
-                        />
-                      ),
-                    }}
-                  >
-                    {mainFactCheck}
-                  </ReactMarkdown>
-                </div>
-              </details>
+                      </div>
+                    ),
+                    h3: ({ node, ...props }) => (
+                      <h3
+                        className="text-base font-medium mt-3 mb-1 text-slate-700"
+                        {...props}
+                      />
+                    ),
+                    strong: ({ node, ...props }) => (
+                      <strong
+                        className="font-semibold text-slate-800"
+                        {...props}
+                      />
+                    ),
+                    div: ({ node, className, ...props }) => (
+                      <div className={className || ""} {...props} />
+                    ),
+                  }}
+                  rehypePlugins={[]}
+                >
+                  {formattedFactCheck}
+                </ReactMarkdown>
+              </div>
             </div>
-          )}
+          </div>
 
           {followupQuestions}
 
