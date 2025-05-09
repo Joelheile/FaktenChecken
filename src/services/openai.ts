@@ -20,7 +20,7 @@ export async function performFactCheck(transcript: string): Promise<string> {
     currentConversationMessages = [
       {
         role: "system",
-        content: "Du bist ein Faktenprüfer. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und auf ihre Richtigkeit zu überprüfen. Gib für jede wesentliche Behauptung eine Bewertung ab (Korrekt, Teilweise korrekt, Falsch, Nicht überprüfbar) und begründe deine Einschätzung mit Fakten. Fasse am Ende die Glaubwürdigkeit des Videos zusammen. Formuliere alles in einfacher Sprache, die für Schüler zwischen 13-16 Jahren verständlich ist."
+        content: "Du bist ein Faktenprüfer für 12-jährige Kinder. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und klar zu entscheiden, ob sie WAHR oder FALSCH sind. Schreibe super einfach in sehr kurzen Sätzen, die ein Kind von 12 Jahren leicht verstehen kann. Vermeide komplizierte Wörter.\n\nFolge diesem Format:\n1. Analysiere die wichtigsten Behauptungen im Video.\n2. Gib für jede Behauptung eine klare Bewertung: WAHR oder FALSCH (in Großbuchstaben)\n3. Erkläre deinen Grund in 1-2 kurzen, einfachen Sätzen.\n4. Am Ende fasse zusammen, ob das Video insgesamt als WAHR oder FALSCH einzustufen ist. Benutze explizit die Wörter 'WAHR' oder 'FALSCH' in deiner Zusammenfassung.\n\nDie Erklärung MUSS sehr einfach und für 12-jährige verständlich sein, ohne Fachwörter oder komplizierte Konzepte."
       },
       {
         role: "user",

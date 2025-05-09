@@ -5,7 +5,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
-import { HelpCircle, Loader, MessageCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  HelpCircle,
+  Loader,
+  MessageCircle,
+  XCircle,
+} from "lucide-react";
 import { useState } from "react";
 
 interface FactCheckResultProps {
@@ -40,6 +46,79 @@ const FactCheckResult = ({
 
   // Check if we have followup questions
   const hasFollowup = factCheck.includes("--- Folgende Frage ---");
+
+  // Determine the overall verdict (WAHR or FALSCH)
+  const determineVerdict = (text: string) => {
+    const lowerText = text.toLowerCase();
+
+    // More sophisticated logic to determine the verdict
+    const falseIndicators = [
+      "falsch",
+      "nicht korrekt",
+      "irreführend",
+      "fehlinformation",
+    ];
+    const trueIndicators = ["korrekt", "richtig", "wahr", "stimmt"];
+
+    // Count occurrences of indicators
+    const falseCount = falseIndicators.reduce(
+      (count, indicator) => count + (lowerText.split(indicator).length - 1),
+      0
+    );
+    const trueCount = trueIndicators.reduce(
+      (count, indicator) => count + (lowerText.split(indicator).length - 1),
+      0
+    );
+
+    // If there are significantly more false indicators, consider it false
+    if (falseCount > trueCount + 1) {
+      return "FALSCH";
+    }
+    // If there are significantly more true indicators, consider it true
+    else if (trueCount > falseCount + 1) {
+      return "WAHR";
+    }
+    // Otherwise, look for summary statements that might indicate the final verdict
+    else if (
+      lowerText.includes("überwiegend falsch") ||
+      lowerText.includes("größtenteils falsch") ||
+      lowerText.includes("meistens falsch")
+    ) {
+      return "FALSCH";
+    } else if (
+      lowerText.includes("überwiegend wahr") ||
+      lowerText.includes("größtenteils wahr") ||
+      lowerText.includes("meistens wahr")
+    ) {
+      return "WAHR";
+    }
+    // Default to showing both perspectives
+    else {
+      return "TEILS-TEILS";
+    }
+  };
+
+  // Extract a simplified explanation
+  const extractSimpleExplanation = (text: string) => {
+    // Split into paragraphs
+    const paragraphs = text.split("\n\n");
+
+    // Find summary paragraphs - usually toward the end
+    const summaryParagraphs = paragraphs.filter(
+      (p) =>
+        p.toLowerCase().includes("zusammenfass") ||
+        p.toLowerCase().includes("fazit") ||
+        p.toLowerCase().includes("insgesamt")
+    );
+
+    if (summaryParagraphs.length > 0) {
+      // Take the first summary paragraph and simplify if needed
+      return summaryParagraphs[0];
+    } else {
+      // If no summary found, take the first few paragraphs (introductory text)
+      return paragraphs.slice(0, 2).join("\n\n");
+    }
+  };
 
   // Format the factCheck result with better styling
   const formatFactCheck = (text: string) => {
@@ -121,6 +200,10 @@ const FactCheckResult = ({
     );
   }
 
+  // Determine the verdict and explanation
+  const verdict = determineVerdict(factCheck);
+  const simpleExplanation = extractSimpleExplanation(factCheck);
+
   return (
     <div className="w-full max-w-xl space-y-6">
       <Card>
@@ -132,10 +215,41 @@ const FactCheckResult = ({
         </CardContent>
       </Card>
 
+      {/* Verdict Card with big indicator */}
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <span>Faktencheck</span>
+            <span>Ergebnis des Faktenchecks</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col items-center text-center mb-4">
+            <div
+              className={cn(
+                "w-full max-w-sm py-6 rounded-lg font-bold text-3xl flex items-center justify-center mb-4",
+                verdict === "WAHR"
+                  ? "bg-green-100 text-green-700"
+                  : verdict === "FALSCH"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-yellow-100 text-yellow-700"
+              )}
+            >
+              {verdict === "WAHR" && <CheckCircle2 className="h-8 w-8 mr-2" />}
+              {verdict === "FALSCH" && <XCircle className="h-8 w-8 mr-2" />}
+              {verdict}
+            </div>
+            <div className="text-lg p-4 bg-slate-50 rounded-lg">
+              {simpleExplanation}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Detailed Analysis (Collapsed initially) */}
+      <Card className="border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <span>Ausführliche Faktencheck-Analyse</span>
             {!isLoading && hasFollowup && (
               <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
                 +Folgetragen beantwortet
