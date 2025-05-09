@@ -25,6 +25,15 @@ export async function performFactCheck(transcript: string): Promise<string> {
 **Einfach erklärt:** Das Video mischt wahre Informationen mit falschen Dingen. Du solltest vorsichtig sein, was du davon glaubst.`;
     }
 
+    // Check if transcript is empty or very small
+    if (!transcript || transcript.trim().length < 5) {
+      console.log("Empty transcript, returning simple message");
+      return `**Behauptung 1:** Es gibt keinen Text im Video.
+**Bewertung:** LEER  
+**Warum:** Wir haben keinen Text gefunden.`
+
+    }
+
     console.log("Performing fact check with ChatGPT 3.5 Turbo");
     
     // Reset conversation history when starting a new fact check

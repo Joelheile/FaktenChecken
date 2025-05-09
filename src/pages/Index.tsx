@@ -184,13 +184,13 @@ const Index = () => {
                 className="h-24 md:h-32 w-auto rounded-xl bg-gradient-to-r  from-blue-600 to-purple-600  shadow-md p-4"
               />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text mb-4 animate-gradient">
+            <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text mb-4 animate-gradient">
               FaktenChecken
             </h1>
             <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 max-w-2xl mx-auto text-center">
               Überprüfe was du auf TikTok siehst und lerne, was wahr ist!
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-3 max-w-2xl text-center">
+            <p className="text-base text-gray-500 dark:text-gray-400 mt-3 max-w-2xl text-center">
               Ein Bildungstool für Schüler, um kritisches Denken zu fördern.
               Eine Kooperation mit dem Schulsozialarbeiter Stephan Borchardt von
               der Ernst-Schering-Schule.
@@ -204,10 +204,10 @@ const Index = () => {
             <CardHeader className="pb-2 md:pb-4">
               <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
                 <Search className="h-5 w-5 text-blue-500" />
-                Video analysieren
+                Video prüfen
               </CardTitle>
-              <CardDescription className="text-sm">
-                Füge einen TikTok-Link ein, um den Inhalt zu überprüfen
+              <CardDescription className="text-base">
+                Füge einen TikTok-Link ein
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -237,7 +237,7 @@ const Index = () => {
               )}
 
               {showExampleTip && !isLoading && !factCheckData && (
-                <div className="mt-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-sm flex items-start gap-2 animate-in fade-in">
+                <div className="mt-4 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 rounded-lg p-3 text-base flex items-start gap-2 animate-in fade-in">
                   <Lightbulb className="h-5 w-5 text-amber-500 mt-0.5" />
                   <p className="text-amber-800 dark:text-amber-400">
                     Tipp: Du kannst TikTok-Links in der App finden, indem du auf
@@ -288,7 +288,7 @@ const Index = () => {
                         className="h-6 w-6"
                       />
                     </div>
-                    <h3 className="font-medium text-base md:text-lg mb-2">
+                    <h3 className="font-medium text-lg md:text-xl mb-2">
                       So einfach geht's
                     </h3>
                     <p className="text-sm md:text-base text-gray-600 dark:text-gray-400">
@@ -348,10 +348,8 @@ const Index = () => {
                       3
                     </div>
                     <div>
-                      <h3 className="font-medium text-base">
-                        Kopiere den Link
-                      </h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm">
+                      <h3 className="font-medium text-lg">Link kopieren</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-base">
                         Tippe auf <Copy className="h-4 w-4 inline mx-1" /> "Link
                         kopieren" und füge ihn oben ein
                       </p>
@@ -362,13 +360,11 @@ const Index = () => {
                 <div className="mt-6 p-4 border border-blue-100 dark:border-blue-900 rounded-lg bg-blue-50 dark:bg-blue-950/40">
                   <div className="flex items-center gap-2 mb-2">
                     <HelpCircle className="h-5 w-5 text-blue-600 dark:text-blue-500" />
-                    <span className="font-medium text-base">
-                      Hilfreicher Tipp:
-                    </span>
+                    <span className="font-medium text-lg">Tipp:</span>
                   </div>
-                  <p className="text-sm text-blue-700 dark:text-blue-400">
-                    Der Link sollte so aussehen:
-                    <span className="font-mono text-xs p-1 mt-1 bg-blue-100 dark:bg-blue-900/50 rounded block break-all">
+                  <p className="text-base text-blue-700 dark:text-blue-400">
+                    Der Link sieht so aus:
+                    <span className="font-mono text-sm p-1 mt-1 bg-blue-100 dark:bg-blue-900/50 rounded block break-all">
                       https://www.tiktok.com/@username/video/1234567890...
                     </span>
                   </p>
@@ -394,7 +390,7 @@ const Index = () => {
         <footer className="text-center text-sm text-gray-500 dark:text-gray-400 mt-8 space-y-2 py-4">
           <p>© 2025 FaktenChecken. Alle Rechte vorbehalten.</p>
 
-          <div className="text-xs flex justify-center gap-4 items-center">
+          <div className="text-base flex justify-center gap-4 items-center">
             <Link
               to="/impressum"
               className="text-blue-600 dark:text-blue-400 hover:underline transition-colors"

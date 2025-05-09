@@ -180,6 +180,9 @@ const FactCheckResult = ({
     return followups.length > 0 ? followups : null;
   };
 
+  // Check if transcript is empty
+  const isEmptyTranscript = !transcript || transcript.trim().length < 5;
+
   if (isLoading && (!transcript || !factCheck)) {
     return (
       <div className="w-full max-w-xl space-y-4 md:space-y-6">
@@ -223,7 +226,16 @@ const FactCheckResult = ({
           <CardTitle className="text-lg md:text-xl">Transkript</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-xs md:text-sm">{transcript}</p>
+          {isEmptyTranscript ? (
+            <div className="flex items-center justify-center p-4 bg-red-50 rounded-md">
+              <XCircle className="h-4 w-4 text-red-500 mr-2" />
+              <p className="text-sm font-medium text-red-500">
+                Kein Text im Video gefunden
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs md:text-sm">{transcript}</p>
+          )}
         </CardContent>
       </Card>
 
@@ -259,92 +271,96 @@ const FactCheckResult = ({
             </div>
           </div>
 
-          <div className="mt-4 md:mt-6 rounded-lg">
-            <details>
-              <summary className="cursor-pointer text-sm md:text-base font-medium p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
-                Vollständige Analyse anzeigen
-              </summary>
-              <div className="mt-2 md:mt-3 p-2 md:p-3 bg-slate-50 rounded-lg text-xs md:text-sm">
-                <ReactMarkdown
-                  components={{
-                    p: ({ node, ...props }) => (
-                      <p
-                        className="mt-2 md:mt-3 prose-sm max-w-none"
-                        {...props}
-                      />
-                    ),
-                    ul: ({ node, ...props }) => (
-                      <ul
-                        className="mt-2 md:mt-3 list-disc pl-4 md:pl-5"
-                        {...props}
-                      />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li className="mt-1 md:mt-2" {...props} />
-                    ),
-                    h1: ({ node, ...props }) => (
-                      <h1
-                        className="text-base md:text-lg font-bold mt-3 md:mt-4 mb-1 md:mb-2"
-                        {...props}
-                      />
-                    ),
-                    h2: ({ node, ...props }) => (
-                      <h2
-                        className="text-sm md:text-base font-bold mt-3 md:mt-4 mb-1 md:mb-2"
-                        {...props}
-                      />
-                    ),
-                    h3: ({ node, ...props }) => (
-                      <h3
-                        className="text-sm md:text-base font-semibold mt-2 md:mt-3 mb-1 md:mb-2"
-                        {...props}
-                      />
-                    ),
-                  }}
-                >
-                  {mainFactCheck}
-                </ReactMarkdown>
-              </div>
-            </details>
-          </div>
+          {!isEmptyTranscript && (
+            <div className="mt-4 md:mt-6 rounded-lg">
+              <details>
+                <summary className="cursor-pointer text-sm md:text-base font-medium p-2 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+                  Vollständige Analyse anzeigen
+                </summary>
+                <div className="mt-2 md:mt-3 p-2 md:p-3 bg-slate-50 rounded-lg text-xs md:text-sm">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => (
+                        <p
+                          className="mt-2 md:mt-3 prose-sm max-w-none"
+                          {...props}
+                        />
+                      ),
+                      ul: ({ node, ...props }) => (
+                        <ul
+                          className="mt-2 md:mt-3 list-disc pl-4 md:pl-5"
+                          {...props}
+                        />
+                      ),
+                      li: ({ node, ...props }) => (
+                        <li className="mt-1 md:mt-2" {...props} />
+                      ),
+                      h1: ({ node, ...props }) => (
+                        <h1
+                          className="text-base md:text-lg font-bold mt-3 md:mt-4 mb-1 md:mb-2"
+                          {...props}
+                        />
+                      ),
+                      h2: ({ node, ...props }) => (
+                        <h2
+                          className="text-sm md:text-base font-bold mt-3 md:mt-4 mb-1 md:mb-2"
+                          {...props}
+                        />
+                      ),
+                      h3: ({ node, ...props }) => (
+                        <h3
+                          className="text-sm md:text-base font-semibold mt-2 md:mt-3 mb-1 md:mb-2"
+                          {...props}
+                        />
+                      ),
+                    }}
+                  >
+                    {mainFactCheck}
+                  </ReactMarkdown>
+                </div>
+              </details>
+            </div>
+          )}
 
           {followupQuestions}
 
-          <form onSubmit={handleFollowupSubmit} className="mt-5 md:mt-6">
-            <div className="space-y-2 md:space-y-3">
-              <p className="text-sm md:text-base font-medium flex items-center">
-                <HelpCircle className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2" />
-                Stelle eine Frage zu diesem Video
-              </p>
-              <Textarea
-                placeholder="Zum Beispiel: Was bedeutet...? Ist es wahr, dass...?"
-                value={followupQuestion}
-                onChange={(e) => setFollowupQuestion(e.target.value)}
-                rows={3}
-                className="w-full min-h-24 p-2 md:p-3 text-xs md:text-sm"
-              />
-              <Button
-                type="submit"
-                disabled={isSubmitting || !followupQuestion.trim()}
-                className="w-full"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2 animate-spin" />
-                    Frage wird beantwortet...
-                  </>
-                ) : (
-                  "Frage stellen"
-                )}
-              </Button>
-              <Alert className="bg-blue-50 border-blue-100 mt-2 md:mt-3">
-                <AlertDescription className="text-xs md:text-sm text-blue-700">
-                  Du kannst mehrere Fragen stellen, um mehr über das Thema zu
-                  erfahren.
-                </AlertDescription>
-              </Alert>
-            </div>
-          </form>
+          {!isEmptyTranscript && (
+            <form onSubmit={handleFollowupSubmit} className="mt-5 md:mt-6">
+              <div className="space-y-2 md:space-y-3">
+                <p className="text-sm md:text-base font-medium flex items-center">
+                  <HelpCircle className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2" />
+                  Stelle eine Frage zu diesem Video
+                </p>
+                <Textarea
+                  placeholder="Zum Beispiel: Was bedeutet...? Ist es wahr, dass...?"
+                  value={followupQuestion}
+                  onChange={(e) => setFollowupQuestion(e.target.value)}
+                  rows={3}
+                  className="w-full min-h-24 p-2 md:p-3 text-xs md:text-sm"
+                />
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !followupQuestion.trim()}
+                  className="w-full"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="h-3 md:h-4 w-3 md:w-4 mr-1 md:mr-2 animate-spin" />
+                      Frage wird beantwortet...
+                    </>
+                  ) : (
+                    "Frage stellen"
+                  )}
+                </Button>
+                <Alert className="bg-blue-50 border-blue-100 mt-2 md:mt-3">
+                  <AlertDescription className="text-xs md:text-sm text-blue-700">
+                    Du kannst mehrere Fragen stellen, um mehr über das Thema zu
+                    erfahren.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
