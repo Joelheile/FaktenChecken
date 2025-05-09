@@ -47,10 +47,10 @@ export async function performFactCheck(transcript: string): Promise<string> {
         "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4.1-nano",
         messages: currentConversationMessages,
-        temperature: 0.1,
-        max_tokens: 1000
+        temperature: 0.2,
+        max_tokens: 2000
       })
     });
 
