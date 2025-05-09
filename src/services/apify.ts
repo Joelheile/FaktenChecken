@@ -8,7 +8,7 @@ const APIFY_BASE_URL = "https://api.apify.com/v2";
 // Helper to delay execution
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Function to extract video ID from TikTok URL
+// Function to extract video ID from TikTok URL (handles all TikTok domain variants)
 export function extractTikTokVideoId(url: string): string {
   const regex = /video\/(\d+)/;
   const match = url.match(regex);

@@ -23,7 +23,7 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
 
     // Validierung für TikTok-URLs
     const tiktokRegex =
-      /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
+      /^(https?:\/\/)?(www\.|m\.|vm\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
     if (!tiktokRegex.test(url)) {
       toast.error(
         "Bitte gib eine gültige TikTok-URL ein (Format: https://www.tiktok.com/@username/video/1234567890...)"
@@ -53,7 +53,7 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
         <div className="flex flex-col md:flex-row gap-2">
           <Input
             id="tiktok-url"
-            placeholder="https://www.tiktok.com/@username/video/1234567890..."
+            placeholder="https://www.tiktok.com/...."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1 text-xs md:text-sm h-8 md:h-10"
