@@ -1,10 +1,9 @@
-
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { toast } from "sonner";
-import { Loader, Copy, ArrowDown } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Loader } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface TikTokInputProps {
   onSubmit: (url: string) => Promise<void>;
@@ -21,19 +20,24 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
       toast.error("Bitte einen TikTok-Link eingeben");
       return;
     }
-    
+
     // Validierung für TikTok-URLs
-    const tiktokRegex = /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
+    const tiktokRegex =
+      /^(https?:\/\/)?(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
     if (!tiktokRegex.test(url)) {
-      toast.error("Bitte geben Sie eine gültige TikTok-URL ein (Format: https://www.tiktok.com/@username/video/1234567890...)");
+      toast.error(
+        "Bitte geben Sie eine gültige TikTok-URL ein (Format: https://www.tiktok.com/@username/video/1234567890...)"
+      );
       return;
     }
-    
+
     try {
       await onSubmit(url);
     } catch (error) {
       console.error("Error submitting URL:", error);
-      toast.error("Fehler bei der Verarbeitung des Videos. Bitte versuchen Sie es erneut.");
+      toast.error(
+        "Fehler bei der Verarbeitung des Videos. Bitte versuchen Sie es erneut."
+      );
     }
   };
 
@@ -43,7 +47,7 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
         <label htmlFor="tiktok-url" className="text-sm font-medium">
           TikTok URL eingeben:
         </label>
-        <div className={`flex ${isMobile ? 'flex-col' : ''} gap-2`}>
+        <div className={`flex ${isMobile ? "flex-col" : ""} gap-2`}>
           <Input
             id="tiktok-url"
             placeholder="https://www.tiktok.com/@username/video/1234567890..."
@@ -52,8 +56,8 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
             className="flex-1"
             disabled={isLoading}
           />
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={isLoading}
             className={isMobile ? "mt-2" : ""}
           >
@@ -62,7 +66,9 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
                 <Loader className="mr-2 h-4 w-4 animate-spin" />
                 Lädt...
               </>
-            ) : "Prüfen"}
+            ) : (
+              "Prüfen"
+            )}
           </Button>
         </div>
       </div>

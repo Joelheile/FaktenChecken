@@ -1,73 +1,84 @@
-# Welcome to your Lovable project
+# TikTok Truth Teller
 
-## Project info
+A fact-checking application that analyzes TikTok videos and provides fact checking using OpenAI's ChatGPT.
 
-**URL**: https://lovable.dev/projects/de08a380-145e-4caf-82e4-b8f46946fe9e
+## Features
 
-## How can I edit this code?
+- Extract transcripts from TikTok videos using Apify
+- Analyze transcripts with ChatGPT to identify factual claims
+- Get fact-checking evaluations of claims made in TikTok videos
+- Ask follow-up questions about the video content
 
-There are several ways of editing your application.
+## Requirements
 
-**Use Lovable**
+- Node.js 16+ and npm
+- Apify API token (for TikTok transcript extraction)
+- OpenAI API key (for fact-checking with ChatGPT)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/de08a380-145e-4caf-82e4-b8f46946fe9e) and start prompting.
+## Setup
 
-Changes made via Lovable will be committed automatically to this repo.
+1. Clone the repository:
 
-**Use your preferred IDE**
+```bash
+git clone https://github.com/yourusername/tiktok-truth-teller.git
+cd tiktok-truth-teller
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+2. Install dependencies:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+npm install
+```
 
-Follow these steps:
+3. Create a `.env` file in the project root with your API keys:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```
+VITE_APIFY_API_TOKEN=your_apify_token_here
+VITE_OPENAI_API_KEY=your_openai_key_here
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## Development
 
-# Step 3: Install the necessary dependencies.
-npm i
+Start the development server:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## Building for Production
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Build the application for production:
 
-**Use GitHub Codespaces**
+```bash
+npm run build
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Preview the production build:
 
-## What technologies are used for this project?
+```bash
+npm run preview
+```
 
-This project is built with:
+## How it Works
 
-- Vite
+1. The application takes a TikTok video URL as input
+2. It sends the URL to Apify's TikTok Scraper API to extract the video transcript
+3. The transcript is sent to OpenAI's ChatGPT for fact-checking
+4. Results are displayed showing both the transcript and a factual analysis
+
+## Architecture
+
+- React/Vite frontend with Tailwind CSS for styling
+- Apify client for extracting TikTok transcripts
+- OpenAI API for fact-checking using ChatGPT
+- Environment variables for API key management
+
+## Technologies Used
+
 - TypeScript
 - React
-- shadcn-ui
+- Vite
 - Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/de08a380-145e-4caf-82e4-b8f46946fe9e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- Shadcn UI Components
+- Apify Client API
+- OpenAI API

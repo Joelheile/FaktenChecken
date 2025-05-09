@@ -1,13 +1,12 @@
-
-import { useState } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader, MessageCircle } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { HelpCircle, Loader, MessageCircle } from "lucide-react";
+import { useState } from "react";
 
 interface FactCheckResultProps {
   transcript: string;
@@ -16,11 +15,11 @@ interface FactCheckResultProps {
   isLoading: boolean;
 }
 
-const FactCheckResult = ({ 
-  transcript, 
-  factCheck, 
+const FactCheckResult = ({
+  transcript,
+  factCheck,
   onAskFollowup,
-  isLoading 
+  isLoading,
 }: FactCheckResultProps) => {
   const [followupQuestion, setFollowupQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +28,7 @@ const FactCheckResult = ({
   const handleFollowupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!followupQuestion.trim()) return;
-    
+
     setIsSubmitting(true);
     try {
       await onAskFollowup(followupQuestion);
@@ -39,19 +38,59 @@ const FactCheckResult = ({
     }
   };
 
+  // Check if we have followup questions
+  const hasFollowup = factCheck.includes("--- Folgende Frage ---");
+
   // Format the factCheck result with better styling
   const formatFactCheck = (text: string) => {
-    return text
-      .split('\n\n')
-      .map((paragraph, idx) => (
-        <p key={idx} className={cn(
-          "my-2", 
-          paragraph.startsWith('---') ? 'mt-6 font-semibold' : '',
-          paragraph.includes('Folgende Frage') ? 'mt-6 bg-blue-50 p-2 rounded-md' : ''
-        )}>
-          {paragraph}
-        </p>
-      ));
+    // First, split by the followup question delimiter
+    const parts = text.split("--- Folgende Frage ---");
+
+    const mainCheck = parts[0].split("\n\n").map((paragraph, idx) => (
+      <p
+        key={`main-${idx}`}
+        className={cn(
+          "my-2",
+          paragraph.startsWith("---") ? "mt-6 font-semibold" : ""
+        )}
+      >
+        {paragraph}
+      </p>
+    ));
+
+    // Format any followup sections
+    const followups = parts.slice(1).map((followupSection, sectionIdx) => {
+      const [question, ...answerParts] = followupSection.trim().split("\n\n");
+      const answer = answerParts.join("\n\n");
+
+      return (
+        <div
+          key={`followup-${sectionIdx}`}
+          className="mt-6 pt-4 border-t border-blue-200"
+        >
+          <div className="bg-blue-50 p-3 rounded-md mb-3">
+            <p className="font-medium text-blue-800">
+              <MessageCircle className="h-4 w-4 inline mr-2" />
+              Frage: {question}
+            </p>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-md">
+            {answer.split("\n\n").map((paragraph, pIdx) => (
+              <p key={`answer-${sectionIdx}-${pIdx}`} className="my-2">
+                {paragraph}
+              </p>
+            ))}
+          </div>
+        </div>
+      );
+    });
+
+    return (
+      <>
+        {mainCheck}
+        {followups}
+      </>
+    );
   };
 
   if (isLoading && (!transcript || !factCheck)) {
@@ -65,7 +104,7 @@ const FactCheckResult = ({
             <Skeleton className="w-full h-24" />
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardHeader>
             <CardTitle>Faktencheck</CardTitle>
@@ -92,14 +131,14 @@ const FactCheckResult = ({
           <p className="text-sm">{transcript}</p>
         </CardContent>
       </Card>
-      
+
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <span>Faktencheck</span>
-            {!isLoading && factCheck.includes("Folgende Frage") && (
+            {!isLoading && hasFollowup && (
               <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
-                +Folgetrage beantwortet
+                +Folgetragen beantwortet
               </span>
             )}
           </CardTitle>
@@ -110,38 +149,45 @@ const FactCheckResult = ({
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <MessageCircle className="h-5 w-5" />
-            <span>Rückfragen</span>
+            <span>Rückfragen an ChatGPT</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <Alert variant="info" className="mb-4">
+            <HelpCircle className="h-4 w-4" />
+            <AlertDescription>
+              Du kannst weitere Fragen zum Faktencheck stellen. ChatGPT behält
+              den Kontext früherer Fragen bei.
+            </AlertDescription>
+          </Alert>
+
           <form onSubmit={handleFollowupSubmit} className="space-y-4">
-            <Textarea 
-              placeholder="Stelle eine Frage zu diesem Faktencheck..." 
+            <Textarea
+              placeholder="Stelle eine Frage zu diesem Faktencheck..."
               value={followupQuestion}
               onChange={(e) => setFollowupQuestion(e.target.value)}
               className="min-h-[100px]"
               disabled={isSubmitting}
             />
             <div className="flex justify-end">
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={isSubmitting}
-                className={cn(
-                  "transition-all",
-                  isMobile ? "w-full" : ""
-                )}
+                className={cn("transition-all", isMobile ? "w-full" : "")}
               >
                 {isSubmitting ? (
                   <>
-                    <Loader className="mr-2 h-4 w-4 animate-spin" /> 
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
                     Sende...
                   </>
-                ) : "Frage senden"}
+                ) : (
+                  "Frage senden"
+                )}
               </Button>
             </div>
           </form>
