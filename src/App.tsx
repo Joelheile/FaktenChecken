@@ -16,8 +16,13 @@ const PostHogPageview = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Track pageview when location changes
-    posthog.capture("$pageview");
+    // Track pageview with current URL properties when location changes
+    posthog.capture("$pageview", {
+      $current_url: location.pathname,
+      path: location.pathname,
+      referrer: document.referrer,
+      title: document.title,
+    });
   }, [location]);
 
   return null;
