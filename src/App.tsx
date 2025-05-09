@@ -1,13 +1,39 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { posthog } from "@/lib/posthog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import Impressum from "./pages/Impressum";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+// PostHog tracking component
+const PostHogPageview = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // Track pageview when location changes
+    posthog.capture("$pageview");
+  }, [location]);
+
+  return null;
+};
+
+const AppRoutes = () => (
+  <>
+    <PostHogPageview />
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/impressum" element={<Impressum />} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  </>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -15,12 +41,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/impressum" element={<Impressum />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AppRoutes />
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

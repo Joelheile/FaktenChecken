@@ -1,4 +1,5 @@
 import FactCheckResult from "@/components/FactCheckResult";
+
 import TikTokInput from "@/components/TikTokInput";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { posthog } from "@/lib/posthog";
 import {
   askFollowupQuestion,
   FactCheckResponse,
@@ -33,6 +35,11 @@ const Index = () => {
     setIsLoading(true);
     setProgress(0);
 
+    // Track form submission with PostHog
+    posthog.capture("tiktok_url_submitted", {
+      url_length: url.length,
+    });
+
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 95) {
@@ -50,6 +57,12 @@ const Index = () => {
       setFactCheckData(result);
       toast.success("Faktencheck erfolgreich abgeschlossen!");
 
+      // Track successful fact check with PostHog
+      posthog.capture("fact_check_completed", {
+        success: true,
+        transcript_length: result.transcript.length,
+      });
+
       setTimeout(() => {
         setProgress(0);
       }, 1000);
@@ -61,6 +74,11 @@ const Index = () => {
         error instanceof Error ? error.message : "Unbekannter Fehler";
       setError(errorMessage);
       toast.error("Fehler beim Faktencheck: " + errorMessage);
+
+      // Track error with PostHog
+      posthog.capture("fact_check_error", {
+        error_message: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -69,6 +87,12 @@ const Index = () => {
   const handleFollowupQuestion = async (question: string) => {
     setError(null);
     setIsLoading(true);
+
+    // Track followup question with PostHog
+    posthog.capture("followup_question_asked", {
+      question_length: question.length,
+    });
+
     try {
       const answer = await askFollowupQuestion(question);
 
@@ -82,6 +106,11 @@ const Index = () => {
             "\n\n" +
             answer,
         });
+
+        // Track successful followup answer
+        posthog.capture("followup_question_answered", {
+          success: true,
+        });
       }
     } catch (error) {
       console.error("Error asking followup:", error);
@@ -89,6 +118,11 @@ const Index = () => {
         error instanceof Error ? error.message : "Unbekannter Fehler";
       setError(errorMessage);
       toast.error("Fehler bei der Beantwortung der Frage: " + errorMessage);
+
+      // Track error with PostHog
+      posthog.capture("followup_question_error", {
+        error_message: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -105,16 +139,16 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen py-8 px-4 bg-gradient-to-b from-white to-blue-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       <Toaster position="top-center" />
 
-      <div className="max-w-4xl mx-auto space-y-10">
+      <div className="max-w-4xl mx-auto space-y-10 py-8 px-4">
         <header className="text-center space-y-4">
-          <div className="flex justify-center mb-4">
+          <div className="flex justify-center mb-4 ">
             <img
-              src="https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=600&auto=format&fit=crop&q=80"
-              alt="TikTok Faktencheck Logo"
-              className="h-20 w-auto rounded-lg shadow-lg"
+              src="/schule.png"
+              alt="Ernst-Schering-Schule Logo"
+              className="h-28 w-auto rounded-lg bg-gray-400 p-4"
             />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
@@ -136,9 +170,6 @@ const Index = () => {
                 <CardTitle className="text-2xl">
                   Warum ist Faktencheck wichtig?
                 </CardTitle>
-                <CardDescription className="text-base">
-                  Speziell für Schüler zwischen 13-16 Jahren
-                </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-lg">
