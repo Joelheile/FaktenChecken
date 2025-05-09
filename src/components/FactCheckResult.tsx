@@ -13,6 +13,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
 
 interface FactCheckResultProps {
   transcript: string;
@@ -60,6 +61,15 @@ const FactCheckResult = ({
     ];
     const trueIndicators = ["korrekt", "richtig", "wahr", "stimmt"];
 
+    // Check for explicit verdict in Markdown format first
+    if (text.includes("**Ergebnis:** WAHR")) {
+      return "WAHR";
+    } else if (text.includes("**Ergebnis:** FALSCH")) {
+      return "FALSCH";
+    } else if (text.includes("**Ergebnis:** TEILS-TEILS")) {
+      return "TEILS-TEILS";
+    }
+
     // Count occurrences of indicators
     const falseCount = falseIndicators.reduce(
       (count, indicator) => count + (lowerText.split(indicator).length - 1),
@@ -100,6 +110,12 @@ const FactCheckResult = ({
 
   // Extract a simplified explanation
   const extractSimpleExplanation = (text: string) => {
+    // Look for Markdown formatted summary
+    const match = text.match(/\*\*Einfach erklärt:\*\*\s*(.+?)(\n|$)/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+
     // Split into paragraphs
     const paragraphs = text.split("\n\n");
 
@@ -120,24 +136,14 @@ const FactCheckResult = ({
     }
   };
 
-  // Format the factCheck result with better styling
-  const formatFactCheck = (text: string) => {
+  // Format the factCheck result with better styling for follow-up questions
+  const formatFollowupQuestions = (text: string) => {
+    if (!hasFollowup) return null;
+
     // First, split by the followup question delimiter
     const parts = text.split("--- Folgende Frage ---");
 
-    const mainCheck = parts[0].split("\n\n").map((paragraph, idx) => (
-      <p
-        key={`main-${idx}`}
-        className={cn(
-          "my-2",
-          paragraph.startsWith("---") ? "mt-6 font-semibold" : ""
-        )}
-      >
-        {paragraph}
-      </p>
-    ));
-
-    // Format any followup sections
+    // We only want the followup parts, not the main check
     const followups = parts.slice(1).map((followupSection, sectionIdx) => {
       const [question, ...answerParts] = followupSection.trim().split("\n\n");
       const answer = answerParts.join("\n\n");
@@ -154,22 +160,21 @@ const FactCheckResult = ({
             </p>
           </div>
           <div className="bg-gray-50 p-3 rounded-md">
-            {answer.split("\n\n").map((paragraph, pIdx) => (
-              <p key={`answer-${sectionIdx}-${pIdx}`} className="my-2">
-                {paragraph}
-              </p>
-            ))}
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => (
+                  <p className="prose prose-sm max-w-none my-2" {...props} />
+                ),
+              }}
+            >
+              {answer}
+            </ReactMarkdown>
           </div>
         </div>
       );
     });
 
-    return (
-      <>
-        {mainCheck}
-        {followups}
-      </>
-    );
+    return followups.length > 0 ? followups : null;
   };
 
   if (isLoading && (!transcript || !factCheck)) {
@@ -203,6 +208,10 @@ const FactCheckResult = ({
   // Determine the verdict and explanation
   const verdict = determineVerdict(factCheck);
   const simpleExplanation = extractSimpleExplanation(factCheck);
+
+  // For followup questions, we want to separate them from the main factCheck
+  const mainFactCheck = factCheck.split("--- Folgende Frage ---")[0];
+  const followupQuestions = formatFollowupQuestions(factCheck);
 
   return (
     <div className="w-full max-w-xl space-y-6">
@@ -245,7 +254,7 @@ const FactCheckResult = ({
         </CardContent>
       </Card>
 
-      {/* Detailed Analysis (Collapsed initially) */}
+      {/* Detailed Analysis */}
       <Card className="border-primary/20">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -259,7 +268,20 @@ const FactCheckResult = ({
         </CardHeader>
         <CardContent>
           <div className="prose prose-sm max-w-none">
-            {formatFactCheck(factCheck)}
+            <ReactMarkdown
+              components={{
+                p: ({ node, ...props }) => <p className="my-2" {...props} />,
+                strong: ({ node, ...props }) => (
+                  <strong className="font-bold" {...props} />
+                ),
+                h3: ({ node, ...props }) => (
+                  <h3 className="text-lg font-bold mt-4 mb-2" {...props} />
+                ),
+              }}
+            >
+              {mainFactCheck}
+            </ReactMarkdown>
+            {followupQuestions}
           </div>
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 // Get OpenAI API key from environment variables
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "";
+import { FACT_CHECK_PROMPT, FOLLOWUP_PROMPT } from "./prompts";
 
 // Store conversation context for follow-up questions
 let currentConversationMessages: Array<{role: string, content: string}> = [];
@@ -11,7 +12,17 @@ export async function performFactCheck(transcript: string): Promise<string> {
   try {
     if (!OPENAI_API_KEY) {
       console.log("OpenAI API key not found in environment variables");
-      return `Faktencheck für den Transkript:\n\n1. Behauptung: [Erste Behauptung aus dem Video]\n   Bewertung: Teilweise korrekt.\n   Erklärung: Die präsentierten Daten sind grundsätzlich richtig, aber fehlen wichtigen Kontext.\n\n2. Behauptung: [Zweite Behauptung aus dem Video]\n   Bewertung: Falsch.\n   Erklärung: Diese Behauptung widerspricht aktuellen wissenschaftlichen Erkenntnissen.\n\nZusammenfassung: Das Video enthält eine Mischung aus korrekten Informationen und Fehlinformationen.`;
+      return `**Behauptung 1:** [Erste Behauptung aus dem Video]
+**Bewertung:** TEILS-TEILS  
+**Warum:** Die präsentierten Daten sind grundsätzlich richtig, aber es fehlt wichtiger Kontext.
+
+**Behauptung 2:** [Zweite Behauptung aus dem Video]
+**Bewertung:** FALSCH  
+**Warum:** Diese Behauptung stimmt nicht mit dem überein, was Wissenschaftler herausgefunden haben.
+
+### Zusammenfassung:
+**Ergebnis:** TEILS-TEILS  
+**Einfach erklärt:** Das Video mischt wahre Informationen mit falschen Dingen. Du solltest vorsichtig sein, was du davon glaubst.`;
     }
 
     console.log("Performing fact check with ChatGPT 3.5 Turbo");
@@ -20,7 +31,7 @@ export async function performFactCheck(transcript: string): Promise<string> {
     currentConversationMessages = [
       {
         role: "system",
-        content: "Du bist ein Faktenprüfer für 12-jährige Kinder. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und klar zu entscheiden, ob sie WAHR oder FALSCH sind. Schreibe super einfach in sehr kurzen Sätzen, die ein Kind von 12 Jahren leicht verstehen kann. Vermeide komplizierte Wörter.\n\nFolge diesem Format:\n1. Analysiere die wichtigsten Behauptungen im Video.\n2. Gib für jede Behauptung eine klare Bewertung: WAHR oder FALSCH (in Großbuchstaben)\n3. Erkläre deinen Grund in 1-2 kurzen, einfachen Sätzen.\n4. Am Ende fasse zusammen, ob das Video insgesamt als WAHR oder FALSCH einzustufen ist. Benutze explizit die Wörter 'WAHR' oder 'FALSCH' in deiner Zusammenfassung.\n\nDie Erklärung MUSS sehr einfach und für 12-jährige verständlich sein, ohne Fachwörter oder komplizierte Konzepte."
+        content: FACT_CHECK_PROMPT
       },
       {
         role: "user",
@@ -70,7 +81,7 @@ export async function askFollowupQuestion(question: string): Promise<string> {
   try {
     if (!OPENAI_API_KEY) {
       console.log("OpenAI API key not found in environment variables");
-      return "Antwort auf Ihre Frage:\n\nVielen Dank für Ihre Nachfrage. Zu diesem Thema gibt es folgende zusätzliche Informationen, die Ihnen helfen könnten...\n\nIch hoffe, das beantwortet Ihre Frage. Haben Sie weitere Fragen?";
+      return "**Antwort auf deine Frage:**\n\nHier ist eine einfache Erklärung, die dir helfen kann. Wenn du noch mehr Fragen hast, kannst du gerne nochmal fragen!";
     }
 
     if (currentConversationMessages.length === 0) {
@@ -78,6 +89,16 @@ export async function askFollowupQuestion(question: string): Promise<string> {
     }
 
     console.log(`Sending follow-up question to ChatGPT 3.5 Turbo: ${question}`);
+    
+    // Update system message for followup to be more kid-friendly
+    // Find and replace the system message
+    const systemMessageIndex = currentConversationMessages.findIndex(msg => msg.role === "system");
+    if (systemMessageIndex !== -1) {
+      currentConversationMessages[systemMessageIndex] = {
+        role: "system",
+        content: FOLLOWUP_PROMPT
+      };
+    }
     
     // Add the user's follow-up question to the conversation history
     currentConversationMessages.push({

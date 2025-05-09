@@ -36,5 +36,11 @@ export async function transcribeAndFactCheck(tiktokUrl: string): Promise<FactChe
   };
 }
 
-// Export askFollowupQuestion from the OpenAI module
-export { askOpenAIFollowup as askFollowupQuestion };
+// Handle follow-up questions
+export async function askFollowupQuestion(question: string): Promise<string> {
+  // Get the answer from OpenAI
+  const answer = await askOpenAIFollowup(question);
+  
+  // Format the answer with the follow-up question marker
+  return `--- Folgende Frage ---\n\n${question}\n\n${answer}`;
+}
