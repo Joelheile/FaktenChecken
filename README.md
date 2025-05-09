@@ -1,4 +1,4 @@
-# TikTok Truth Teller
+# FaktenChecken
 
 A fact-checking application that analyzes TikTok videos and provides fact checking using OpenAI's ChatGPT.
 
@@ -20,8 +20,8 @@ A fact-checking application that analyzes TikTok videos and provides fact checki
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/tiktok-truth-teller.git
-cd tiktok-truth-teller
+git clone https://github.com/yourusername/FaktenChecken.git
+cd FaktenChecken
 ```
 
 2. Install dependencies:

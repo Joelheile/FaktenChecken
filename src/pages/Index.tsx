@@ -118,10 +118,14 @@ const Index = () => {
             />
           </div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-            TikTok Faktencheck
+            FaktenChecken
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Überprüfe was du auf TikTok siehst und lerne, was wahr ist!
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            Ein Bildungstool für Schüler, um kritisches Denken zu fördern. Eine
+            Kooperation mit Stephan Borchardt von der Ernst Scheering Schule.
           </p>
         </header>
 
@@ -288,9 +292,12 @@ const Index = () => {
         <Separator className="my-8" />
 
         <footer className="text-center text-sm text-muted-foreground mt-10 space-y-2">
-          <p>© 2025 TikTok Faktencheck. Alle Rechte vorbehalten.</p>
-          <p className="text-xs">
-            Ein Bildungstool für Schüler, um kritisches Denken zu fördern.
+          <p>© 2025 FaktenChecken. Alle Rechte vorbehalten.</p>
+
+          <p className="text-xs mt-2">
+            <a href="/impressum" className="text-blue-600 hover:underline">
+              Impressum
+            </a>
           </p>
         </footer>
       </div>
