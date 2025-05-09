@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader, Copy, ArrowDown } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TikTokInputProps {
   onSubmit: (url: string) => Promise<void>;
@@ -13,6 +13,7 @@ interface TikTokInputProps {
 
 const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
   const [url, setUrl] = useState("");
+  const isMobile = useIsMobile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +43,7 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
         <label htmlFor="tiktok-url" className="text-sm font-medium">
           TikTok URL eingeben:
         </label>
-        <div className="flex gap-2">
+        <div className={`flex ${isMobile ? 'flex-col' : ''} gap-2`}>
           <Input
             id="tiktok-url"
             placeholder="https://www.tiktok.com/@username/video/1234567890..."
@@ -51,7 +52,11 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
             className="flex-1"
             disabled={isLoading}
           />
-          <Button type="submit" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            className={isMobile ? "mt-2" : ""}
+          >
             {isLoading ? (
               <>
                 <Loader className="mr-2 h-4 w-4 animate-spin" />

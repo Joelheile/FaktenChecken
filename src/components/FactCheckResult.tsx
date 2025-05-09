@@ -5,7 +5,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Loader } from "lucide-react";
+import { Loader, MessageCircle } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface FactCheckResultProps {
   transcript: string;
@@ -22,6 +24,7 @@ const FactCheckResult = ({
 }: FactCheckResultProps) => {
   const [followupQuestion, setFollowupQuestion] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleFollowupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,7 +44,11 @@ const FactCheckResult = ({
     return text
       .split('\n\n')
       .map((paragraph, idx) => (
-        <p key={idx} className={`my-2 ${paragraph.startsWith('---') ? 'mt-6 font-semibold' : ''}`}>
+        <p key={idx} className={cn(
+          "my-2", 
+          paragraph.startsWith('---') ? 'mt-6 font-semibold' : '',
+          paragraph.includes('Folgende Frage') ? 'mt-6 bg-blue-50 p-2 rounded-md' : ''
+        )}>
           {paragraph}
         </p>
       ));
@@ -88,7 +95,14 @@ const FactCheckResult = ({
       
       <Card className="border-primary/20">
         <CardHeader>
-          <CardTitle>Faktencheck</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <span>Faktencheck</span>
+            {!isLoading && factCheck.includes("Folgende Frage") && (
+              <span className="bg-blue-100 text-blue-600 text-xs px-2 py-1 rounded-full">
+                +Folgetrage beantwortet
+              </span>
+            )}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="prose prose-sm max-w-none">
@@ -99,7 +113,10 @@ const FactCheckResult = ({
       
       <Card>
         <CardHeader>
-          <CardTitle>Rückfragen</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5" />
+            <span>Rückfragen</span>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleFollowupSubmit} className="space-y-4">
@@ -110,14 +127,23 @@ const FactCheckResult = ({
               className="min-h-[100px]"
               disabled={isSubmitting}
             />
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" /> 
-                  Sende...
-                </>
-              ) : "Frage senden"}
-            </Button>
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className={cn(
+                  "transition-all",
+                  isMobile ? "w-full" : ""
+                )}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader className="mr-2 h-4 w-4 animate-spin" /> 
+                    Sende...
+                  </>
+                ) : "Frage senden"}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>

@@ -41,23 +41,7 @@ async function getTikTokTranscript(url: string): Promise<string> {
 
     console.log(`Fetching transcript for TikTok video ID: ${videoId}`);
     
-    // Start the Apify actor run
-    const runResponse = await fetch(`https://api.apify.com/v2/actor-tasks/tiktok_scraper/run-sync?token=${apifyApiToken}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        urls: [url],
-        captions: true
-      }),
-    });
-    
-    if (!runResponse.ok) {
-      throw new Error(`Apify API error: ${runResponse.status}`);
-    }
-    
-    // Get output dataset from the run
+    // Using the correct Apify dataset endpoint based on the provided documentation
     const datasetResponse = await fetch(`https://api.apify.com/v2/datasets/TOoo5HOEjdoYUqIqO/items?token=${apifyApiToken}`);
     
     if (!datasetResponse.ok) {
@@ -83,7 +67,7 @@ async function getTikTokTranscript(url: string): Promise<string> {
   }
 }
 
-// Function to perform fact check using ChatGPT 4o
+// Function to perform fact check using ChatGPT 4o according to OpenAI documentation
 async function performFactCheckWithChatGPT(transcript: string): Promise<string> {
   try {
     if (!openaiApiKey) {
@@ -93,7 +77,7 @@ async function performFactCheckWithChatGPT(transcript: string): Promise<string> 
 
     console.log("Performing fact check with ChatGPT 4o");
     
-    // Official OpenAI API call for ChatGPT 4o
+    // Using the OpenAI API for gpt-4o according to the latest documentation
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -105,7 +89,7 @@ async function performFactCheckWithChatGPT(transcript: string): Promise<string> 
         messages: [
           {
             role: "system",
-            content: "Du bist ein Faktenprüfer. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und auf ihre Richtigkeit zu überprüfen. Gib für jede wesentliche Behauptung eine Bewertung ab (Korrekt, Teilweise korrekt, Falsch, Nicht überprüfbar) und begründe deine Einschätzung mit Fakten. Fasse am Ende die Glaubwürdigkeit des Videos zusammen."
+            content: "Du bist ein Faktenprüfer. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und auf ihre Richtigkeit zu überprüfen. Gib für jede wesentliche Behauptung eine Bewertung ab (Korrekt, Teilweise korrekt, Falsch, Nicht überprüfbar) und begründe deine Einschätzung mit Fakten. Fasse am Ende die Glaubwürdigkeit des Videos zusammen. Formuliere alles in einfacher Sprache, die für Schüler zwischen 13-16 Jahren verständlich ist."
           },
           {
             role: "user",
@@ -155,7 +139,7 @@ export async function askFollowupQuestion(question: string): Promise<string> {
 
     console.log(`Sending follow-up question to ChatGPT 4o: ${question}`);
     
-    // Official OpenAI API call for follow-up questions
+    // Using the OpenAI API for gpt-4o according to the latest documentation
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -167,7 +151,7 @@ export async function askFollowupQuestion(question: string): Promise<string> {
         messages: [
           {
             role: "system",
-            content: "Du bist ein Faktenprüfer, der Folgefragen zu einem bereits durchgeführten Faktencheck beantwortet. Gib sachliche, gut recherchierte Antworten."
+            content: "Du bist ein Faktenprüfer, der Folgefragen zu einem bereits durchgeführten Faktencheck beantwortet. Gib sachliche, gut recherchierte Antworten in einfacher Sprache, die für Schüler zwischen 13-16 Jahren verständlich ist."
           },
           {
             role: "user",
