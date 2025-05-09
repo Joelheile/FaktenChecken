@@ -23,6 +23,25 @@ interface FactCheckResultProps {
   isLoading: boolean;
 }
 
+// Define an interface for structured claims
+interface StructuredClaim {
+  type: "claim";
+  label: string;
+  content: string;
+  verdict: string;
+  explanation: string;
+  status: "true" | "false" | "partial" | "unknown";
+}
+
+// Define an interface for regular text
+interface TextContent {
+  type: "text";
+  content: string;
+}
+
+// Combined content type
+type ContentItem = StructuredClaim | TextContent;
+
 const FactCheckResult = ({
   transcript,
   factCheck,
@@ -150,12 +169,19 @@ const FactCheckResult = ({
     const followups = parts
       .slice(1)
       .map((followupSection, sectionIdx) => {
-        const [question, ...answerParts] = followupSection.trim().split("\n\n");
-        const answer = answerParts.join("\n\n");
+        // Handle case where there might not be a newline after the question
+        const sectionLines = followupSection.trim().split("\n");
+        let question = sectionLines[0].trim();
+
+        // The rest of the content is the answer, regardless of format
+        let answer = "";
+        if (sectionLines.length > 1) {
+          answer = sectionLines.slice(1).join("\n").trim();
+        }
 
         // Skip duplicate questions (case insensitive)
         const questionKey = question.toLowerCase().trim();
-        if (processedQuestions.has(questionKey)) {
+        if (processedQuestions.has(questionKey) || !answer) {
           return null;
         }
         processedQuestions.add(questionKey);
@@ -193,35 +219,325 @@ const FactCheckResult = ({
     return followups.length > 0 ? followups : null;
   };
 
-  // Format colored claim boxes for statements in the analysis
-  const formatClaimText = (text: string) => {
-    // Format Behauptung 1: etc with colored labels
-    const formattedText = text.replace(
-      /(Behauptung \d+:)(.+?)(Bewertung:)(.+?)(Warum:)/gs,
-      (match, behauptungLabel, claim, bewertungLabel, verdict, warumLabel) => {
-        const trimmedVerdict = verdict.trim().toLowerCase();
-        const verdictClass =
-          trimmedVerdict.includes("wahr") && !trimmedVerdict.includes("falsch")
-            ? "bg-green-50 border-green-200 text-green-800"
-            : trimmedVerdict.includes("falsch")
-              ? "bg-red-50 border-red-200 text-red-800"
-              : trimmedVerdict.includes("teils")
-                ? "bg-yellow-50 border-yellow-200 text-yellow-800"
-                : "bg-blue-50 border-blue-200 text-blue-800";
+  // Parse the factCheck content to extract structured claims
+  const parseFactCheckContent = (text: string): ContentItem[] => {
+    const result: ContentItem[] = [];
 
-        return `<div class="border rounded-md p-3 mb-4 ${verdictClass}">
-          <div class="font-bold mb-1">${behauptungLabel}</div>
-          <div class="mb-2">${claim}</div>
-          <div class="font-bold mb-1">${bewertungLabel}</div>
-          <div class="mb-2 font-semibold">${verdict}</div>
-          <div class="font-bold mb-1">${warumLabel}</div>`;
+    // First check if there's a summary section and extract it for special handling
+    let summaryContent = "";
+    const summaryMatch = text.match(/\*\*Zusammenfassung:\*\*(.*?)(?:\n\n|$)/s);
+    if (summaryMatch) {
+      summaryContent = summaryMatch[0].trim();
+      // Remove summary from text to avoid duplicate processing
+      text = text.replace(summaryMatch[0], "").trim();
+    }
+
+    // Check if this is a single block of markdown content with embedded claims, verdicts, and explanations
+    if (text.includes("**Bewertung:**") && text.includes("**Warum:**")) {
+      // Process text with embedded formatting
+      try {
+        // Extract structured claims from markdown
+        let remainingText = text;
+        let claimNumber = 1;
+
+        // Find all claim blocks using regex pattern for the full claim structure
+        const claimPattern =
+          /(?:Behauptung\s*\d*\s*:)?\s*\*\*([^*]+)\*\*\s*Bewertung:\*\*\s*([^*]+)\s*\*\*Warum:\*\*\s*([^*]+)/g;
+        let claimMatch;
+
+        while ((claimMatch = claimPattern.exec(text)) !== null) {
+          const [fullMatch, claimContent, verdict, explanation] = claimMatch;
+
+          // Determine the claim status
+          let status: "true" | "false" | "partial" | "unknown" = "unknown";
+          const lowerVerdict = verdict.toLowerCase().trim();
+
+          if (
+            lowerVerdict.includes("wahr") &&
+            !lowerVerdict.includes("falsch")
+          ) {
+            status = "true";
+          } else if (lowerVerdict.includes("falsch")) {
+            status = "false";
+          } else if (lowerVerdict.includes("teils")) {
+            status = "partial";
+          }
+
+          // Add the claim to results
+          result.push({
+            type: "claim",
+            label: `Behauptung ${claimNumber}:`,
+            content: claimContent.trim(),
+            verdict: verdict.trim(),
+            explanation: explanation.trim(),
+            status,
+          });
+
+          claimNumber++;
+
+          // Remove processed claim from remaining text
+          remainingText = remainingText.replace(fullMatch, "");
+        }
+
+        // Handle individual claim sections that might not match the pattern above
+        if (result.length === 0) {
+          // Try to extract claims one by one
+          const claimLabels = text.match(/Behauptung\s*\d+\s*:/g) || [];
+
+          claimLabels.forEach((label, index) => {
+            const labelIndex = text.indexOf(label);
+            const nextLabelIndex =
+              index < claimLabels.length - 1
+                ? text.indexOf(claimLabels[index + 1])
+                : text.length;
+
+            const claimSection = text
+              .substring(labelIndex, nextLabelIndex)
+              .trim();
+
+            // Extract verdict
+            const verdictMatch = claimSection.match(
+              /\*\*Bewertung:\*\*\s*([^*]+)/
+            );
+            const verdict = verdictMatch ? verdictMatch[1].trim() : "";
+
+            // Extract explanation
+            const explanationMatch = claimSection.match(
+              /\*\*Warum:\*\*\s*([^*]+)/
+            );
+            const explanation = explanationMatch
+              ? explanationMatch[1].trim()
+              : "";
+
+            // Extract claim content (everything before verdict)
+            let claimContent = claimSection.replace(label, "").trim();
+            if (verdictMatch) {
+              claimContent = claimContent
+                .substring(0, claimContent.indexOf("**Bewertung:**"))
+                .trim();
+            }
+
+            // Remove any remaining asterisks
+            claimContent = claimContent.replace(/\*\*/g, "").trim();
+
+            // Determine status
+            let status: "true" | "false" | "partial" | "unknown" = "unknown";
+            const lowerVerdict = verdict.toLowerCase();
+
+            if (
+              lowerVerdict.includes("wahr") &&
+              !lowerVerdict.includes("falsch")
+            ) {
+              status = "true";
+            } else if (lowerVerdict.includes("falsch")) {
+              status = "false";
+            } else if (lowerVerdict.includes("teils")) {
+              status = "partial";
+            }
+
+            // Add claim to results
+            result.push({
+              type: "claim",
+              label: label,
+              content: claimContent,
+              verdict: verdict,
+              explanation: explanation || "Keine Erklärung verfügbar.",
+              status,
+            });
+          });
+        }
+
+        // Process any remaining text
+        if (remainingText.trim() !== "") {
+          result.push({
+            type: "text",
+            content: remainingText.trim(),
+          });
+        }
+      } catch (e) {
+        console.error("Error parsing claims:", e);
+        // Fallback: add the entire text as a single content item
+        result.push({
+          type: "text",
+          content: text,
+        });
       }
-    );
+    } else {
+      // If not in markdown format, try parsing by paragraphs
+      const paragraphs = text.split("\n\n");
 
-    // Close the div tags
-    return formattedText.replace(
-      /(?<!(Behauptung \d+:)(.+?)(Bewertung:)(.+?)(Warum:))(Behauptung \d+:)/gs,
-      '</div><div class="border rounded-md p-3 mb-4 bg-gray-50 border-gray-200">$1'
+      // Regular expression to find claim patterns
+      const claimPattern = /Behauptung\s*(\d+)?\s*:/i;
+      const verdictPattern = /Bewertung\s*:/i;
+      const explanationPattern = /Warum\s*:/i;
+
+      for (let i = 0; i < paragraphs.length; i++) {
+        const paragraph = paragraphs[i].trim();
+        if (paragraph === "") continue;
+
+        // Check if this paragraph is a claim
+        if (claimPattern.test(paragraph)) {
+          const claimMatch = paragraph.match(claimPattern);
+          const claimLabel = claimMatch ? claimMatch[0] : "Behauptung:";
+          const claimContent = paragraph.replace(claimPattern, "").trim();
+
+          // Look ahead for verdict
+          let verdict = "";
+          let explanation = "";
+          let status: "true" | "false" | "partial" | "unknown" = "unknown";
+
+          // Check next paragraph for verdict
+          if (
+            i + 1 < paragraphs.length &&
+            verdictPattern.test(paragraphs[i + 1])
+          ) {
+            verdict = paragraphs[i + 1].replace(verdictPattern, "").trim();
+            i++; // Move to verdict paragraph
+
+            // Check next paragraph for explanation
+            if (
+              i + 1 < paragraphs.length &&
+              explanationPattern.test(paragraphs[i + 1])
+            ) {
+              explanation = paragraphs[i + 1]
+                .replace(explanationPattern, "")
+                .trim();
+              i++; // Move to explanation paragraph
+            }
+          }
+
+          // Determine status from verdict
+          const lowerVerdict = verdict.toLowerCase();
+          if (
+            lowerVerdict.includes("wahr") &&
+            !lowerVerdict.includes("falsch")
+          ) {
+            status = "true";
+          } else if (lowerVerdict.includes("falsch")) {
+            status = "false";
+          } else if (lowerVerdict.includes("teils")) {
+            status = "partial";
+          }
+
+          // Add claim to results
+          result.push({
+            type: "claim",
+            label: claimLabel,
+            content: claimContent,
+            verdict: verdict,
+            explanation: explanation || "Keine Erklärung verfügbar.",
+            status,
+          });
+        } else {
+          // Regular text paragraph
+          result.push({
+            type: "text",
+            content: paragraph,
+          });
+        }
+      }
+    }
+
+    // If we have a summary content, process it and add to the end
+    if (summaryContent) {
+      // Extract verdict from summary if available
+      let summaryVerdict = "";
+      let summaryExplanation = "";
+      let status: "true" | "false" | "partial" | "unknown" = "unknown";
+
+      // Extract verdict pattern
+      const summaryVerdictMatch = summaryContent.match(
+        /\*\*Ergebnis:\*\*\s*([^*\n]+)/
+      );
+      if (summaryVerdictMatch) {
+        summaryVerdict = summaryVerdictMatch[1].trim();
+
+        // Determine status from verdict
+        const lowerVerdict = summaryVerdict.toLowerCase();
+        if (lowerVerdict.includes("wahr") && !lowerVerdict.includes("falsch")) {
+          status = "true";
+        } else if (lowerVerdict.includes("falsch")) {
+          status = "false";
+        } else if (lowerVerdict.includes("teils")) {
+          status = "partial";
+        }
+      }
+
+      // Extract simple explanation if available
+      const summaryExplanationMatch = summaryContent.match(
+        /\*\*Einfach erklärt:\*\*\s*([^*\n]+)/
+      );
+      if (summaryExplanationMatch) {
+        summaryExplanation = summaryExplanationMatch[1].trim();
+      }
+
+      // Add the summary as a special claim
+      result.push({
+        type: "claim",
+        label: "Zusammenfassung:",
+        content: summaryExplanation || "Zusammenfassung des Faktenchecks",
+        verdict: summaryVerdict,
+        explanation: summaryExplanation || "",
+        status,
+      });
+    }
+
+    // If no results, add the entire text as a fallback
+    if (result.length === 0) {
+      result.push({
+        type: "text",
+        content: text,
+      });
+    }
+
+    return result;
+  };
+
+  // Render a claim with proper styling
+  const renderClaim = (claim: StructuredClaim, index: number) => {
+    // Determine the appropriate styling based on the verdict
+    const bgColorClass =
+      claim.status === "true"
+        ? "bg-green-50 border-green-200"
+        : claim.status === "false"
+          ? "bg-red-50 border-red-200"
+          : claim.status === "partial"
+            ? "bg-yellow-50 border-yellow-200"
+            : "bg-blue-50 border-blue-200";
+
+    const textColorClass =
+      claim.status === "true"
+        ? "text-green-800"
+        : claim.status === "false"
+          ? "text-red-800"
+          : claim.status === "partial"
+            ? "text-yellow-800"
+            : "text-blue-800";
+
+    return (
+      <div
+        key={`claim-${index}`}
+        className={`border rounded-md p-3 mb-4 ${bgColorClass} ${textColorClass}`}
+      >
+        <div className="font-bold mb-1">{claim.label}</div>
+        <div className="mb-2">{claim.content}</div>
+        <div className="font-bold mb-1">Bewertung:</div>
+        <div className="mb-2 font-semibold">{claim.verdict}</div>
+        <div className="font-bold mb-1">Warum:</div>
+        <div>{claim.explanation}</div>
+      </div>
+    );
+  };
+
+  // Render text content
+  const renderTextContent = (textContent: TextContent, index: number) => {
+    return (
+      <p
+        key={`text-${index}`}
+        className="mb-4 text-sm md:text-base text-slate-600"
+      >
+        {textContent.content}
+      </p>
     );
   };
 
@@ -264,8 +580,8 @@ const FactCheckResult = ({
   const mainFactCheck = factCheck.split("--- Folgende Frage ---")[0];
   const followupQuestions = formatFollowupQuestions(factCheck);
 
-  // Format the factcheck with colored claim boxes
-  const formattedFactCheck = formatClaimText(mainFactCheck);
+  // Parse fact check content
+  const parsedContent = parseFactCheckContent(mainFactCheck);
 
   return (
     <div className="w-full max-w-xl space-y-4 md:space-y-6">
@@ -277,7 +593,9 @@ const FactCheckResult = ({
           <CardTitle className="text-lg md:text-xl flex justify-between items-center">
             <span>Transkript</span>
             <ChevronDown
-              className={`h-5 w-5 transition-transform ${isTranscriptOpen ? "transform rotate-180" : ""}`}
+              className={`h-5 w-5 transition-transform ${
+                isTranscriptOpen ? "transform rotate-180" : ""
+              }`}
             />
           </CardTitle>
         </CardHeader>
@@ -304,7 +622,12 @@ const FactCheckResult = ({
       <Card className="border-primary/20">
         <CardHeader className="pb-2 md:pb-6">
           <CardTitle className="flex items-center gap-1 md:gap-2 text-lg md:text-xl">
-            <span>Ergebnis des Faktenchecks</span>
+            <div className="flex flex-col">
+              <span>Ergebnis des KI Faktenchecks</span>
+              <p className="text-xs md:text-sm text-gray-500">
+                (kann Fehler enthalten, da es automatisch erstellt wird)
+              </p>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -339,57 +662,11 @@ const FactCheckResult = ({
               </h2>
 
               <div className="space-y-4 md:space-y-6">
-                <ReactMarkdown
-                  components={{
-                    p: ({ node, ...props }) => (
-                      <p
-                        className="text-sm md:text-base text-slate-600"
-                        {...props}
-                      />
-                    ),
-                    ul: ({ node, ...props }) => (
-                      <ul
-                        className="mt-2 list-disc pl-5 text-slate-600"
-                        {...props}
-                      />
-                    ),
-                    li: ({ node, ...props }) => (
-                      <li className="mt-1 text-sm md:text-base" {...props} />
-                    ),
-                    h1: ({ node, ...props }) => (
-                      <h1
-                        className="text-lg md:text-xl font-bold mt-4 mb-2 text-slate-800"
-                        {...props}
-                      />
-                    ),
-                    h2: ({ node, ...props }) => (
-                      <div className="mt-4 mb-2">
-                        <h2
-                          className="text-base md:text-lg font-semibold text-slate-800 bg-slate-50 p-2 rounded-md"
-                          {...props}
-                        />
-                      </div>
-                    ),
-                    h3: ({ node, ...props }) => (
-                      <h3
-                        className="text-base font-medium mt-3 mb-1 text-slate-700"
-                        {...props}
-                      />
-                    ),
-                    strong: ({ node, ...props }) => (
-                      <strong
-                        className="font-semibold text-slate-800"
-                        {...props}
-                      />
-                    ),
-                    div: ({ node, className, ...props }) => (
-                      <div className={className || ""} {...props} />
-                    ),
-                  }}
-                  rehypePlugins={[]}
-                >
-                  {formattedFactCheck}
-                </ReactMarkdown>
+                {parsedContent.map((item, index) =>
+                  item.type === "claim"
+                    ? renderClaim(item, index)
+                    : renderTextContent(item, index)
+                )}
               </div>
             </div>
           </div>

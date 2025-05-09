@@ -122,23 +122,25 @@ const Index = () => {
         factCheckData &&
         factCheckData.factCheck
           .toLowerCase()
-          .includes(
-            `--- folgende frage ---\n\n${question.toLowerCase().trim()}\n\n`
-          );
+          .includes(`--- folgende frage ---\n${question.toLowerCase().trim()}`);
 
       // Only proceed if the question doesn't already exist
       if (!questionExists) {
         const answer = await askFollowupQuestion(question);
 
         if (factCheckData) {
+          // Ensure consistent formatting with a clear separation between question and answer
+          const formattedQuestion = question.trim();
+          const formattedAnswer = answer.trim();
+
           setFactCheckData({
             ...factCheckData,
             factCheck:
               factCheckData.factCheck +
-              "\n\n--- Folgende Frage ---\n\n" +
-              question +
+              "\n\n--- Folgende Frage ---\n" +
+              formattedQuestion +
               "\n\n" +
-              answer,
+              formattedAnswer,
           });
 
           // Track successful followup answer
@@ -189,7 +191,7 @@ const Index = () => {
 
       <div className="max-w-5xl mx-auto space-y-8 md:space-y-12 py-8 md:py-12 px-4 md:px-6">
         <header className="flex flex-col items-center relative">
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-100/20 via-transparent to-purple-100/20 rounded-3xl blur-3xl -z-10" />
+          <div className="flex w-full h-full bg-gradient-to-r from-blue-100/20 via-transparent to-purple-100/20 rounded-3xl blur-3xl " />
 
           <div className="flex flex-col items-center mb-6 md:mb-8">
             <div className="flex justify-center mb-6 transform transition-transform hover:scale-105 duration-300">
@@ -208,13 +210,14 @@ const Index = () => {
             <p className="text-base text-gray-500 dark:text-gray-400 mt-3 max-w-2xl text-center">
               Ein Bildungstool für Schüler, um kritisches Denken zu fördern.
               Eine Kooperation mit dem Schulsozialarbeiter Stephan Borchardt von
-              der Ernst-Schering-Schule.
+              der Ernst-Schering-Schule. Wichtig: Die Analysen werden sind von
+              einer KI erstellt und können Fehler enthalten.
             </p>
           </div>
         </header>
 
-        {/* Main Input Section - Always visible */}
-        <div className="sticky top-4 z-5">
+        {/* Main Input Section */}
+        <div className="relative mb-8">
           <Card className="w-full max-w-3xl mx-auto border-none shadow-xl bg-white/90 backdrop-blur-sm dark:bg-gray-900/90 transition-all duration-300 hover:shadow-blue-200/20">
             <CardHeader className="pb-2 md:pb-4">
               <CardTitle className="text-xl md:text-2xl flex items-center gap-2">
