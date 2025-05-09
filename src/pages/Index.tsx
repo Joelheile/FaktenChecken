@@ -181,7 +181,7 @@ const Index = () => {
               <img
                 src="/schule.png"
                 alt="Ernst-Schering-Schule Logo"
-                className="h-24 md:h-32 w-auto rounded-xl bg-blue-600 shadow-md p-4"
+                className="h-24 md:h-32 w-auto rounded-xl bg-gradient-to-r  from-blue-600 to-purple-600  shadow-md p-4"
               />
             </div>
             <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text mb-4 animate-gradient">
