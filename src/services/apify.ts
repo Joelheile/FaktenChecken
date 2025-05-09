@@ -10,9 +10,25 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Function to extract video ID from TikTok URL (handles all TikTok domain variants)
 export function extractTikTokVideoId(url: string): string {
-  const regex = /video\/(\d+)/;
-  const match = url.match(regex);
-  return match ? match[1] : "";
+  // First check for standard TikTok URLs with video ID in path
+  const standardRegex = /video\/(\d+)/;
+  const standardMatch = url.match(standardRegex);
+  
+  if (standardMatch) {
+    return standardMatch[1];
+  }
+  
+  // If it's a shortened URL (like vm.tiktok.com/ZNd6XGGaP/), 
+  // we can't extract the ID directly but can provide a placeholder
+  // The actual video ID will be handled after redirect by Apify
+  const shortUrlRegex = /vm\.tiktok\.com\/(\w+)/i;
+  const shortUrlMatch = url.match(shortUrlRegex);
+  
+  if (shortUrlMatch) {
+    return `shorturl-${shortUrlMatch[1]}`;
+  }
+  
+  return "";
 }
 
 // Initialize the ApifyClient with API token - REMOVED
