@@ -28,6 +28,17 @@ const FactCheckResult = ({
     setFollowupQuestion("");
   };
 
+  // Format the factCheck result with better styling
+  const formatFactCheck = (text: string) => {
+    return text
+      .split('\n\n')
+      .map((paragraph, idx) => (
+        <p key={idx} className={`my-2 ${paragraph.startsWith('---') ? 'mt-6 font-semibold' : ''}`}>
+          {paragraph}
+        </p>
+      ));
+  };
+
   return (
     <div className="w-full max-w-xl space-y-6">
       <Card>
@@ -44,7 +55,9 @@ const FactCheckResult = ({
           <CardTitle>Faktencheck</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="whitespace-pre-wrap">{factCheck}</div>
+          <div className="prose prose-sm max-w-none">
+            {formatFactCheck(factCheck)}
+          </div>
         </CardContent>
       </Card>
       

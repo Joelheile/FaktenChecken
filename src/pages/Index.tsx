@@ -3,6 +3,7 @@ import { useState } from "react";
 import { transcribeAndFactCheck, askFollowupQuestion, FactCheckResponse } from "@/services/api";
 import TikTokInput from "@/components/TikTokInput";
 import FactCheckResult from "@/components/FactCheckResult";
+import ApiKeyInput from "@/components/ApiKeyInput";
 import { Toaster } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -54,6 +55,8 @@ const Index = () => {
         </header>
 
         <main className="space-y-8 flex flex-col items-center">
+          <ApiKeyInput />
+          
           <Card className="w-full max-w-xl">
             <CardHeader>
               <CardTitle>Video analysieren</CardTitle>
