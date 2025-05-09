@@ -6,16 +6,13 @@ export interface FactCheckResponse {
   factCheck: string;
 }
 
-// TikTok API key would normally be stored in a secure backend
-// For demo purposes, we'll allow it to be entered by the user
-let tiktokApiKey = "";
-
-// OpenAI API key would normally be stored in a secure backend
-// For demo purposes, we'll allow it to be entered by the user
+// API keys would normally be stored in a secure backend
+// For demo purposes, we'll allow them to be entered by the user
+let apifyApiToken = "";
 let openaiApiKey = "";
 
-export function setTiktokApiKey(key: string) {
-  tiktokApiKey = key;
+export function setApifyApiToken(token: string) {
+  apifyApiToken = token;
 }
 
 export function setOpenaiApiKey(key: string) {
@@ -29,7 +26,7 @@ function extractTikTokVideoId(url: string): string {
   return match ? match[1] : "";
 }
 
-// Function to get transcript from TikTok video
+// Function to get transcript from TikTok video using Apify
 async function getTikTokTranscript(url: string): Promise<string> {
   try {
     const videoId = extractTikTokVideoId(url);
@@ -37,20 +34,49 @@ async function getTikTokTranscript(url: string): Promise<string> {
       throw new Error("Ungültige TikTok URL. Konnte keine Video-ID extrahieren.");
     }
 
-    if (!tiktokApiKey) {
-      console.log("TikTok API key not set, using mock transcript");
-      return `Dies ist ein Beispiel-Transkript für TikTok Video ID: ${videoId}. In einer vollständigen Implementierung würden wir hier die TikTok API nutzen, um das tatsächliche Transkript des Videos zu erhalten.`;
+    if (!apifyApiToken) {
+      console.log("Apify API token not set, using mock transcript");
+      return `Dies ist ein Beispiel-Transkript für TikTok Video ID: ${videoId}. In einer vollständigen Implementierung würden wir hier die Apify API nutzen, um das tatsächliche Transkript des Videos zu erhalten.`;
     }
 
-    // In a real implementation, we would call the TikTok API here
-    // For demonstration purposes, we'll simulate this with a delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
     console.log(`Fetching transcript for TikTok video ID: ${videoId}`);
     
-    // Simulate API call
-    // In a production environment, this would be a real API call using the TikTok API
-    return `Dies ist ein Beispiel-Transkript für TikTok Video ID: ${videoId}. In einer vollständigen Implementierung würden wir hier die TikTok API nutzen, um das tatsächliche Transkript des Videos zu erhalten.`;
+    // Start the Apify actor run
+    const runResponse = await fetch(`https://api.apify.com/v2/actor-tasks/tiktok_scraper/run-sync?token=${apifyApiToken}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        urls: [url],
+        captions: true
+      }),
+    });
+    
+    if (!runResponse.ok) {
+      throw new Error(`Apify API error: ${runResponse.status}`);
+    }
+    
+    // Get output dataset from the run
+    const datasetResponse = await fetch(`https://api.apify.com/v2/datasets/TOoo5HOEjdoYUqIqO/items?token=${apifyApiToken}`);
+    
+    if (!datasetResponse.ok) {
+      throw new Error(`Apify dataset error: ${datasetResponse.status}`);
+    }
+    
+    const data = await datasetResponse.json();
+    
+    if (!data || data.length === 0) {
+      throw new Error("Keine Daten vom TikTok Video gefunden.");
+    }
+    
+    // Extract transcript from the response
+    const videoData = data[0];
+    if (videoData && videoData.subtitles) {
+      return videoData.subtitles.join(" ");
+    } else {
+      return `Video gefunden, aber kein Transkript verfügbar für Video ID: ${videoId}.`;
+    }
   } catch (error) {
     console.error("Error fetching TikTok transcript:", error);
     throw new Error("Fehler beim Abrufen des Transkripts. Bitte versuchen Sie es erneut.");
@@ -67,7 +93,7 @@ async function performFactCheckWithChatGPT(transcript: string): Promise<string> 
 
     console.log("Performing fact check with ChatGPT 4o");
     
-    // ChatGPT 4o API Call
+    // Official OpenAI API call for ChatGPT 4o
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -108,7 +134,7 @@ async function performFactCheckWithChatGPT(transcript: string): Promise<string> 
 export async function transcribeAndFactCheck(tiktokUrl: string): Promise<FactCheckResponse> {
   console.log(`Prüfe TikTok URL: ${tiktokUrl}`);
   
-  // Get transcript from TikTok API (or mock)
+  // Get transcript from Apify API (or mock)
   const transcript = await getTikTokTranscript(tiktokUrl);
   
   // Get fact check from ChatGPT 4o
@@ -129,7 +155,7 @@ export async function askFollowupQuestion(question: string): Promise<string> {
 
     console.log(`Sending follow-up question to ChatGPT 4o: ${question}`);
     
-    // ChatGPT 4o API Call for follow-up questions
+    // Official OpenAI API call for follow-up questions
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {

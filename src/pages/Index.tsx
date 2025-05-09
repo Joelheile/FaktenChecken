@@ -6,18 +6,44 @@ import FactCheckResult from "@/components/FactCheckResult";
 import ApiKeyInput from "@/components/ApiKeyInput";
 import { Toaster } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [factCheckData, setFactCheckData] = useState<FactCheckResponse | null>(null);
+  const [progress, setProgress] = useState(0);
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
+    setProgress(0);
+    
+    const progressInterval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 95) {
+          clearInterval(progressInterval);
+          return prev;
+        }
+        return prev + 5;
+      });
+    }, 800);
+    
     try {
       const result = await transcribeAndFactCheck(url);
+      clearInterval(progressInterval);
+      setProgress(100);
       setFactCheckData(result);
+      toast.success("Faktencheck erfolgreich abgeschlossen!");
+      
+      // Reset progress after a delay
+      setTimeout(() => {
+        setProgress(0);
+      }, 1000);
     } catch (error) {
+      clearInterval(progressInterval);
+      setProgress(0);
       console.error("Error during fact check:", error);
+      toast.error("Fehler beim Faktencheck: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
     } finally {
       setIsLoading(false);
     }
@@ -37,6 +63,7 @@ const Index = () => {
       }
     } catch (error) {
       console.error("Error asking followup:", error);
+      toast.error("Fehler bei der Beantwortung der Frage: " + (error instanceof Error ? error.message : "Unbekannter Fehler"));
     } finally {
       setIsLoading(false);
     }
@@ -66,15 +93,26 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <TikTokInput onSubmit={handleSubmit} isLoading={isLoading} />
+              
+              {isLoading && progress > 0 && (
+                <div className="mt-4 space-y-2">
+                  <Progress value={progress} className="h-2" />
+                  <p className="text-sm text-center text-muted-foreground">
+                    {progress < 30 ? "Transkript wird abgerufen..." : 
+                     progress < 70 ? "Faktencheck wird durchgeführt..." : 
+                     "Ergebnisse werden zusammengestellt..."}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {factCheckData && (
+          {(factCheckData || isLoading) && (
             <FactCheckResult 
-              transcript={factCheckData.transcript}
-              factCheck={factCheckData.factCheck}
+              transcript={factCheckData?.transcript || ""}
+              factCheck={factCheckData?.factCheck || ""}
               onAskFollowup={handleFollowupQuestion}
-              isLoading={isLoading}
+              isLoading={isLoading && !factCheckData}
             />
           )}
         </main>

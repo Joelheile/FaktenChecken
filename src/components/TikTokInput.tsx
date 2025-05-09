@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { Loader } from "lucide-react";
 
 interface TikTokInputProps {
   onSubmit: (url: string) => Promise<void>;
@@ -47,9 +48,15 @@ const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             className="flex-1"
+            disabled={isLoading}
           />
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Prüfe..." : "Prüfen"}
+            {isLoading ? (
+              <>
+                <Loader className="mr-2 h-4 w-4 animate-spin" />
+                Lädt...
+              </>
+            ) : "Prüfen"}
           </Button>
         </div>
       </div>

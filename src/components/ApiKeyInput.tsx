@@ -3,18 +3,18 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { setTiktokApiKey, setOpenaiApiKey } from "@/services/api";
+import { setApifyApiToken, setOpenaiApiKey } from "@/services/api";
 import { toast } from "sonner";
 
 const ApiKeyInput = () => {
-  const [tiktokKey, setTiktokKey] = useState("");
+  const [apifyToken, setApifyToken] = useState("");
   const [openaiKey, setOpenaiKey] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
   const handleSaveKeys = () => {
-    if (tiktokKey) {
-      setTiktokApiKey(tiktokKey);
-      toast.success("TikTok API-Schlüssel gespeichert");
+    if (apifyToken) {
+      setApifyApiToken(apifyToken);
+      toast.success("Apify API-Token gespeichert");
     }
     
     if (openaiKey) {
@@ -22,7 +22,7 @@ const ApiKeyInput = () => {
       toast.success("OpenAI API-Schlüssel gespeichert");
     }
     
-    if (!tiktokKey && !openaiKey) {
+    if (!apifyToken && !openaiKey) {
       toast.error("Bitte mindestens einen API-Schlüssel eingeben");
     }
   };
@@ -44,18 +44,18 @@ const ApiKeyInput = () => {
       <CardContent className={isVisible ? "block" : "hidden"}>
         <div className="space-y-4">
           <div>
-            <label htmlFor="tiktok-api" className="text-sm font-medium block mb-1">
-              TikTok API Schlüssel (optional)
+            <label htmlFor="apify-token" className="text-sm font-medium block mb-1">
+              Apify API Token (optional)
             </label>
             <Input
-              id="tiktok-api"
+              id="apify-token"
               type="password"
-              value={tiktokKey}
-              onChange={(e) => setTiktokKey(e.target.value)}
-              placeholder="TikTok API Schlüssel"
+              value={apifyToken}
+              onChange={(e) => setApifyToken(e.target.value)}
+              placeholder="Apify API Token"
             />
             <p className="text-xs text-muted-foreground mt-1">
-              Ohne API-Schlüssel wird ein Demo-Transkript verwendet
+              Ohne API-Token wird ein Demo-Transkript verwendet
             </p>
           </div>
           

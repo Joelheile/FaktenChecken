@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader } from "lucide-react";
 
 interface FactCheckResultProps {
   transcript: string;
@@ -19,13 +21,19 @@ const FactCheckResult = ({
   isLoading 
 }: FactCheckResultProps) => {
   const [followupQuestion, setFollowupQuestion] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFollowupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!followupQuestion.trim()) return;
     
-    await onAskFollowup(followupQuestion);
-    setFollowupQuestion("");
+    setIsSubmitting(true);
+    try {
+      await onAskFollowup(followupQuestion);
+      setFollowupQuestion("");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Format the factCheck result with better styling
@@ -38,6 +46,34 @@ const FactCheckResult = ({
         </p>
       ));
   };
+
+  if (isLoading && (!transcript || !factCheck)) {
+    return (
+      <div className="w-full max-w-xl space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Transkript</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="w-full h-24" />
+          </CardContent>
+        </Card>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Faktencheck</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              <Skeleton className="w-full h-8" />
+              <Skeleton className="w-5/6 h-8" />
+              <Skeleton className="w-4/6 h-8" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-xl space-y-6">
@@ -72,9 +108,15 @@ const FactCheckResult = ({
               value={followupQuestion}
               onChange={(e) => setFollowupQuestion(e.target.value)}
               className="min-h-[100px]"
+              disabled={isSubmitting}
             />
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Sende..." : "Frage senden"}
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" /> 
+                  Sende...
+                </>
+              ) : "Frage senden"}
             </Button>
           </form>
         </CardContent>
