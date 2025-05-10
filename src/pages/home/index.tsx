@@ -20,7 +20,7 @@ import { toast, Toaster } from "sonner";
 const getProgressMessage = (
   progress: number,
   hasStatement: boolean,
-  hasUrl: boolean
+  hasUrl: boolean,
 ): string => {
   if (!hasUrl && hasStatement) {
     if (progress < 30) {
@@ -52,7 +52,7 @@ const getProgressMessage = (
 export const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [factCheckData, setFactCheckData] = useState<FactCheckResponse | null>(
-    null
+    null,
   );
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);

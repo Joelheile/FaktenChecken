@@ -7,18 +7,16 @@ import { defineConfig, loadEnv } from "vite";
 export default defineConfig(({ mode }) => {
   // Load env file based on `mode` in the current directory.
   // Set the third parameter to '' to load all env regardless of the `VITE_` prefix.
-  const env = loadEnv(mode, process.cwd(), '');
-  
+  const env = loadEnv(mode, process.cwd(), "");
+
   return {
     server: {
       host: "::",
       port: 8080,
     },
-    plugins: [
-      react(),
-      mode === 'development' &&
-      componentTagger(),
-    ].filter(Boolean),
+    plugins: [react(), mode === "development" && componentTagger()].filter(
+      Boolean,
+    ),
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -26,7 +24,7 @@ export default defineConfig(({ mode }) => {
     },
     // Define env variables available in the app
     define: {
-      'process.env': env
-    }
+      "process.env": env,
+    },
   };
 });

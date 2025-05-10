@@ -33,7 +33,7 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
 
   // Extract claim number if available
   const claimNumber = parseInt(
-    claim.label?.match(/\d+/)?.[0] || (index + 1).toString()
+    claim.label?.match(/\d+/)?.[0] || (index + 1).toString(),
   );
 
   // Format the full content in markdown for reliable display

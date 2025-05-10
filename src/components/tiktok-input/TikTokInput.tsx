@@ -35,7 +35,7 @@ export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
 
     if (trimmedUrl && !validateTikTokUrl(trimmedUrl)) {
       toast.error(
-        "Bitte gib eine gültige TikTok-URL ein (z.B. https://www.tiktok.com/@username/video/1234567890... oder https://vm.tiktok.com/...)"
+        "Bitte gib eine gültige TikTok-URL ein (z.B. https://www.tiktok.com/@username/video/1234567890... oder https://vm.tiktok.com/...)",
       );
       return;
     }

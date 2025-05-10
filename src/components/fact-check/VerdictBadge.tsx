@@ -44,7 +44,7 @@ export const VerdictBadge = ({ verdict, status }: VerdictBadgeProps) => {
         config.bgColor,
         config.borderColor,
         config.textColor,
-        config.shadow
+        config.shadow,
       )}
     >
       {config.icon}

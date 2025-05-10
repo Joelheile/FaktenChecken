@@ -2,20 +2,24 @@ import { ContentItem, StructuredClaim, VerdictStatus } from "./types";
 
 export const determineVerdict = (text: string): string => {
   const lowerText = text.toLowerCase();
-  
+
   // Check for explicit verdict markers first
-  if (text.includes("**Ergebnis:** WAHR") || 
-      text.includes("**Bewertung:** WAHR") ||
-      text.includes("Bewertung: WAHR") ||
-      text.includes("Ergebnis: WAHR")) {
+  if (
+    text.includes("**Ergebnis:** WAHR") ||
+    text.includes("**Bewertung:** WAHR") ||
+    text.includes("Bewertung: WAHR") ||
+    text.includes("Ergebnis: WAHR")
+  ) {
     return "WAHR";
-  } else if (text.includes("**Ergebnis:** FALSCH") || 
-             text.includes("**Bewertung:** FALSCH") ||
-             text.includes("Bewertung: FALSCH") ||
-             text.includes("Ergebnis: FALSCH")) {
+  } else if (
+    text.includes("**Ergebnis:** FALSCH") ||
+    text.includes("**Bewertung:** FALSCH") ||
+    text.includes("Bewertung: FALSCH") ||
+    text.includes("Ergebnis: FALSCH")
+  ) {
     return "FALSCH";
   } else if (
-    text.includes("**Ergebnis:** TEILS-TEILS") || 
+    text.includes("**Ergebnis:** TEILS-TEILS") ||
     text.includes("**Bewertung:** TEILS-TEILS") ||
     text.includes("**Ergebnis:** TEILWEISE WAHR") ||
     text.includes("**Bewertung:** TEILWEISE WAHR") ||
@@ -42,11 +46,11 @@ export const determineVerdict = (text: string): string => {
     "manipulativ",
     "übertrieben",
   ];
-  
+
   const trueIndicators = [
-    "korrekt", 
-    "richtig", 
-    "wahr", 
+    "korrekt",
+    "richtig",
+    "wahr",
     "stimmt",
     "zutreffend",
     "bestätigt",
@@ -56,12 +60,12 @@ export const determineVerdict = (text: string): string => {
 
   const falseCount = falseIndicators.reduce(
     (count, indicator) => count + countOccurrences(lowerText, indicator),
-    0
+    0,
   );
-  
+
   const trueCount = trueIndicators.reduce(
     (count, indicator) => count + countOccurrences(lowerText, indicator),
-    0
+    0,
   );
 
   // Be more critical - require stronger evidence for "true" claims
@@ -86,7 +90,7 @@ export const determineVerdict = (text: string): string => {
 
 // Count occurrences of a term but ignore if in double-negation
 function countOccurrences(text: string, term: string): number {
-  const regex = new RegExp(`(?<!nicht\\s+)${term}`, 'gi');
+  const regex = new RegExp(`(?<!nicht\\s+)${term}`, "gi");
   const matches = text.match(regex) || [];
   return matches.length;
 }
@@ -102,7 +106,7 @@ export const extractSimpleExplanation = (text: string): string => {
     /Fazit:\s*(.+?)(\n|$)/i,
     /Insgesamt:\s*(.+?)(\n|$)/i,
   ];
-  
+
   for (const pattern of summaryPatterns) {
     const match = text.match(pattern);
     if (match && match[1]) {
@@ -119,7 +123,7 @@ export const extractSimpleExplanation = (text: string): string => {
       p.toLowerCase().includes("fazit") ||
       p.toLowerCase().includes("insgesamt") ||
       p.toLowerCase().includes("schlussfolgerung") ||
-      p.toLowerCase().includes("ergebnis ist")
+      p.toLowerCase().includes("ergebnis ist"),
   );
 
   if (summaryParagraphs.length > 0) {
@@ -129,7 +133,10 @@ export const extractSimpleExplanation = (text: string): string => {
   }
 };
 
-export const parseFactCheckContent = (text: string, hasFollowup: boolean): ContentItem[] => {
+export const parseFactCheckContent = (
+  text: string,
+  hasFollowup: boolean,
+): ContentItem[] => {
   let mainContent = text;
 
   if (hasFollowup) {
@@ -137,10 +144,10 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
   }
 
   const result: ContentItem[] = [];
-  
+
   // Split text into individual claims if possible
   const claims = extractClaims(mainContent);
-  
+
   if (claims.length > 0) {
     // If we were able to extract clear claims, use those
     claims.forEach((claim, index) => {
@@ -166,9 +173,9 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
       /\*\*Behauptung\s*\d*\*\*/i,
       /\*\*Aussage\s*\d*\*\*/i,
       /^Behauptung\s*\d+:/i,
-      /^Aussage\s*\d+:/i
+      /^Aussage\s*\d+:/i,
     ];
-    
+
     // Patterns to identify verdict sections
     const verdictPatterns = [
       /\*\*Bewertung:?\*\*/i,
@@ -176,38 +183,40 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
       /\*\*Fazit:?\*\*/i,
       /^Bewertung:/i,
       /^Ergebnis:/i,
-      /^Fazit:/i
+      /^Fazit:/i,
     ];
 
     // Helper function to check if a paragraph matches any pattern
     const matchesAnyPattern = (text: string, patterns: RegExp[]): boolean => {
-      return patterns.some(pattern => pattern.test(text));
+      return patterns.some((pattern) => pattern.test(text));
     };
 
     while (currentIndex < paragraphs.length) {
       const paragraph = paragraphs[currentIndex];
-      
+
       // Check if this paragraph contains a claim marker
       const isClaimParagraph = matchesAnyPattern(paragraph, claimPatterns);
 
       if (isClaimParagraph) {
         // Extract label (remove ** formatting)
         const label = paragraph.replace(/\*\*/g, "").trim();
-        
+
         // The content is usually in the next paragraph, but OpenAI might include it in the same paragraph
         let content = "";
         let nextIndex = currentIndex + 1;
-        
+
         if (currentIndex + 1 < paragraphs.length) {
           const nextParagraph = paragraphs[currentIndex + 1];
           // If the next paragraph is not a verdict marker or another claim, it's likely the claim content
-          if (!matchesAnyPattern(nextParagraph, verdictPatterns) && 
-              !matchesAnyPattern(nextParagraph, claimPatterns)) {
+          if (
+            !matchesAnyPattern(nextParagraph, verdictPatterns) &&
+            !matchesAnyPattern(nextParagraph, claimPatterns)
+          ) {
             content = nextParagraph;
             nextIndex = currentIndex + 2;
           } else {
             // If no clear content paragraph, extract content from the label if possible
-            const colonIndex = label.indexOf(':');
+            const colonIndex = label.indexOf(":");
             if (colonIndex > -1) {
               content = label.substring(colonIndex + 1).trim();
             }
@@ -215,10 +224,10 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
         }
 
         // If we still couldn't extract content
-        if (!content && label.includes(':')) {
-          const parts = label.split(':');
+        if (!content && label.includes(":")) {
+          const parts = label.split(":");
           if (parts.length > 1) {
-            content = parts.slice(1).join(':').trim();
+            content = parts.slice(1).join(":").trim();
           }
         }
 
@@ -228,13 +237,17 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
         let explanation = "";
 
         // Look for verdict and explanation
-        for (let i = nextIndex; i < paragraphs.length && i < nextIndex + 5; i++) {
+        for (
+          let i = nextIndex;
+          i < paragraphs.length && i < nextIndex + 5;
+          i++
+        ) {
           const currentParagraph = paragraphs[i];
-          
+
           // Check if this paragraph contains a verdict marker
           if (matchesAnyPattern(currentParagraph, verdictPatterns)) {
             verdictIndex = i;
-            
+
             // Extract the verdict text, removing the prefix
             verdict = currentParagraph
               .replace(/\*\*/g, "")
@@ -264,7 +277,7 @@ export const parseFactCheckContent = (text: string, hasFollowup: boolean): Conte
 
           currentIndex = nextClaimIndex - 1;
         } else {
-          // If we couldn't find an explicit verdict paragraph, 
+          // If we couldn't find an explicit verdict paragraph,
           // collect all content until the next claim
           let nextClaimIndex = paragraphs.length;
 
@@ -326,32 +339,40 @@ function extractClaims(text: string): {
   explanation: string;
 }[] {
   const claims = [];
-  
+
   // Try to find claim sections with clear structure
-  const claimSections = text.match(/Behauptung\s*\d+:.*?(?=(Behauptung\s*\d+:|$))/gs);
-  
+  const claimSections = text.match(
+    /Behauptung\s*\d+:.*?(?=(Behauptung\s*\d+:|$))/gs,
+  );
+
   if (claimSections && claimSections.length > 0) {
     claimSections.forEach((section, index) => {
       // Try to extract structured parts
       const labelMatch = section.match(/Behauptung\s*\d+:(.*?)(?=\n|$)/);
-      const verdictMatch = section.match(/Bewertung:\s*(WAHR|FALSCH|TEILS-TEILS)/i);
+      const verdictMatch = section.match(
+        /Bewertung:\s*(WAHR|FALSCH|TEILS-TEILS)/i,
+      );
       const whyMatch = section.match(/Warum:?\s*(.*?)(\n\n|$)/is);
-      
-      let content = '';
-      let verdict = '';
-      let explanation = '';
-      
+
+      let content = "";
+      let verdict = "";
+      let explanation = "";
+
       // Extract content - look for content between label and verdict
       if (labelMatch && labelMatch[1].trim()) {
         content = labelMatch[1].trim();
       } else {
         // Try to extract content from the first paragraph after the label
-        const firstPara = section.split('\n\n')[0];
-        if (firstPara && !firstPara.includes('Bewertung:') && !firstPara.includes('Warum:')) {
-          content = firstPara.replace(/Behauptung\s*\d+:/, '').trim();
+        const firstPara = section.split("\n\n")[0];
+        if (
+          firstPara &&
+          !firstPara.includes("Bewertung:") &&
+          !firstPara.includes("Warum:")
+        ) {
+          content = firstPara.replace(/Behauptung\s*\d+:/, "").trim();
         }
       }
-      
+
       // Extract verdict
       if (verdictMatch) {
         verdict = verdictMatch[1].trim();
@@ -362,19 +383,19 @@ function extractClaims(text: string): {
           { pattern: /wahr/i, result: "WAHR" },
           { pattern: /teils-teils/i, result: "TEILS-TEILS" },
         ];
-        
+
         for (const marker of verdictMarkers) {
           if (marker.pattern.test(section)) {
             verdict = marker.result;
             break;
           }
         }
-        
+
         if (!verdict) {
           verdict = determineVerdict(section);
         }
       }
-      
+
       // Extract explanation
       if (whyMatch && whyMatch[1].trim()) {
         explanation = whyMatch[1].trim();
@@ -382,41 +403,51 @@ function extractClaims(text: string): {
         // Try to find any explanation after the verdict
         const parts = section.split(/(Bewertung:|WAHR|FALSCH|TEILS-TEILS)/i);
         if (parts.length > 1) {
-          explanation = parts.slice(1).join('').trim();
+          explanation = parts.slice(1).join("").trim();
         }
       }
-      
+
       claims.push({
         label: `Behauptung ${index + 1}`,
         content,
         verdict,
-        explanation: explanation || "Keine detaillierte Erklärung verfügbar."
+        explanation: explanation || "Keine detaillierte Erklärung verfügbar.",
       });
     });
   }
-  
+
   return claims;
 }
 
 // Determine status from verdict text
 function determineClaimStatus(verdict: string): VerdictStatus {
   const lowerVerdict = verdict.toLowerCase();
-  
-  if (lowerVerdict.includes('wahr') && !lowerVerdict.includes('falsch') && !lowerVerdict.includes('teils')) {
-    return 'true';
-  } else if (lowerVerdict.includes('falsch')) {
-    return 'false';
-  } else if (lowerVerdict.includes('teils') || lowerVerdict.includes('teilweise')) {
-    return 'partial';
+
+  if (
+    lowerVerdict.includes("wahr") &&
+    !lowerVerdict.includes("falsch") &&
+    !lowerVerdict.includes("teils")
+  ) {
+    return "true";
+  } else if (lowerVerdict.includes("falsch")) {
+    return "false";
+  } else if (
+    lowerVerdict.includes("teils") ||
+    lowerVerdict.includes("teilweise")
+  ) {
+    return "partial";
   } else {
-    return 'unknown';
+    return "unknown";
   }
 }
 
-export const getOverallVerdict = (factCheck: string, hasFollowup: boolean): { verdict: string; status: VerdictStatus } => {
+export const getOverallVerdict = (
+  factCheck: string,
+  hasFollowup: boolean,
+): { verdict: string; status: VerdictStatus } => {
   const parsedContent = parseFactCheckContent(factCheck, hasFollowup);
   const claims = parsedContent.filter(
-    (item): item is StructuredClaim => item.type === "claim"
+    (item): item is StructuredClaim => item.type === "claim",
   );
 
   if (claims.length === 0) {
@@ -452,4 +483,4 @@ export const getOverallVerdict = (factCheck: string, hasFollowup: boolean): { ve
   } else {
     return { verdict: "UNBEKANNT", status: "unknown" };
   }
-}; 
+};
