@@ -1,84 +1,38 @@
 # FaktenChecken
 
-A fact-checking application that analyzes TikTok videos and provides fact checking using OpenAI's ChatGPT.
+## 💡 Was ist das?
 
-## Features
+FaktenChecken ist ein kleines Projekt, das während einer spontanen Coding-Session entstanden ist. Wir haben uns die Frage gestellt: Wie können wir Kindern und Jugendlichen helfen, Fake News auf TikTok zu erkennen?
 
-- Extract transcripts from TikTok videos using Apify
-- Analyze transcripts with ChatGPT to identify factual claims
-- Get fact-checking evaluations of claims made in TikTok videos
-- Ask follow-up questions about the video content
+Das Ergebnis: Ein kostenloses Tool, mit dem du TikTok-Videos ganz einfach auf ihren Wahrheitsgehalt überprüfen kannst!
 
-## Requirements
+## 🎯 Warum wir das gemacht haben
 
-- Node.js 16+ and npm
-- Apify API token (for TikTok transcript extraction)
-- OpenAI API key (for fact-checking with ChatGPT)
+Wir leben in einer Zeit, in der Falschinformationen überall sind - besonders in sozialen Medien wie TikTok. Für junge Menschen kann es echt schwer sein, zu erkennen, was wahr ist und was nicht.
 
-## Setup
+Dieses Projekt soll:
 
-1. Clone the repository:
+- Kindern und Jugendlichen ein einfaches Werkzeug an die Hand geben
+- Kritisches Denken fördern
+- Spaß machen und gleichzeitig bilden
+- Komplett kostenlos und für alle zugänglich sein
 
-```bash
-git clone https://github.com/yourusername/FaktenChecken.git
-cd FaktenChecken
-```
+## 🚀 So funktioniert's
 
-2. Install dependencies:
+1. Kopiere einfach die URL eines TikTok-Videos
+2. Füge sie in unser Tool ein
+3. Klicke auf "Prüfen"
+4. Schau dir an, was unser KI-System zum Inhalt sagt
+5. Stelle Fragen, wenn du mehr wissen willst!
 
-```bash
-npm install
-```
+Das Tool analysiert, was im Video gesagt wird, und gibt dir eine Einschätzung, wie vertrauenswürdig die Informationen sind.
 
-3. Create a `.env` file in the project root with your API keys:
+## 👋 Mach mit!
 
-```
-VITE_APIFY_API_TOKEN=your_apify_token_here
-VITE_OPENAI_API_KEY=your_openai_key_here
-```
+Dieses Projekt ist ein Herzensprojekt. Wenn du Ideen hast, wie wir es verbessern können, oder Fehler findest - lass es uns wissen!
 
-## Development
+Vielen Dank an die [Ernst-Schering-Schule Berlin](https://www.ernst-schering-schule.de/) für die Bildungspartnerschaft!
 
-Start the development server:
+## 🔍 Hinweis
 
-```bash
-npm run dev
-```
-
-## Building for Production
-
-Build the application for production:
-
-```bash
-npm run build
-```
-
-Preview the production build:
-
-```bash
-npm run preview
-```
-
-## How it Works
-
-1. The application takes a TikTok video URL as input
-2. It sends the URL to Apify's TikTok Scraper API to extract the video transcript
-3. The transcript is sent to OpenAI's ChatGPT for fact-checking
-4. Results are displayed showing both the transcript and a factual analysis
-
-## Architecture
-
-- React/Vite frontend with Tailwind CSS for styling
-- Apify client for extracting TikTok transcripts
-- OpenAI API for fact-checking using ChatGPT
-- Environment variables for API key management
-
-## Technologies Used
-
-- TypeScript
-- React
-- Vite
-- Tailwind CSS
-- Shadcn UI Components
-- Apify Client API
-- OpenAI API
+FaktenChecken ist ein Bildungsprojekt. Es hilft beim Nachdenken, ersetzt aber nicht dein eigenes kritisches Urteilsvermögen!
