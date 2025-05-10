@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { ChevronDown, FileText } from "lucide-react";
 
@@ -15,31 +14,33 @@ export const TranscriptToggle = ({
   transcript,
 }: TranscriptToggleProps) => {
   return (
-    <Card className="border border-gray-200 shadow-sm overflow-hidden">
-      <CardHeader className="bg-gray-50 pb-2">
+    <div className="border border-gray-200 rounded-md mb-4">
+      <div className="p-3 bg-gray-50 flex justify-between items-center">
+        <div className="flex items-center">
+          <FileText className="h-4 w-4 mr-2 text-gray-600" />
+          <span className="font-medium">TikTok Transkript</span>
+        </div>
         <Button
-          variant="ghost"
+          variant="outline"
           onClick={onToggle}
-          className="w-full flex justify-between items-center py-2 text-gray-700 hover:text-gray-900"
+          className="h-8 px-2 border-gray-300"
+          size="sm"
         >
-          <span className="flex items-center">
-            <FileText className="h-4 w-4 mr-2" />
-            Transkript {isOpen ? "ausblenden" : "anzeigen"}
-          </span>
+          <span className="mr-1">{isOpen ? "Ausblenden" : "Anzeigen"}</span>
           <ChevronDown
             className={cn("h-4 w-4 transition-transform", {
               "transform rotate-180": isOpen,
             })}
           />
         </Button>
-      </CardHeader>
+      </div>
       {isOpen && (
-        <CardContent className="bg-gray-50/50 pt-4">
-          <div className="p-3 bg-white rounded-md text-sm whitespace-pre-wrap border border-gray-100 shadow-sm max-h-60 overflow-y-auto">
+        <div className="p-3">
+          <pre className="text-sm whitespace-pre-wrap bg-white p-3 border border-gray-200 rounded-md overflow-auto max-h-80">
             {transcript}
-          </div>
-        </CardContent>
+          </pre>
+        </div>
       )}
-    </Card>
+    </div>
   );
 };

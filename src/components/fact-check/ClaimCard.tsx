@@ -1,70 +1,63 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, HelpCircle, XCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ClaimCardProps } from "./types";
-import { VerdictBadge } from "./VerdictBadge";
 
 export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
-  const themeConfig = {
+  // Simple configuration for verdict status
+  const statusConfig = {
     true: {
-      cardBorder: "border-green-200",
-      headerBg: "bg-green-50",
+      border: "border-green-200",
       icon: <CheckCircle2 className="h-5 w-5 text-green-600" />,
-      contentBg: "bg-green-50/50",
+      text: "WAHR",
     },
     false: {
-      cardBorder: "border-red-200",
-      headerBg: "bg-red-50",
+      border: "border-red-200",
       icon: <XCircle className="h-5 w-5 text-red-600" />,
-      contentBg: "bg-red-50/50",
+      text: "FALSCH",
     },
     partial: {
-      cardBorder: "border-amber-200",
-      headerBg: "bg-amber-50",
+      border: "border-amber-200",
       icon: <HelpCircle className="h-5 w-5 text-amber-600" />,
-      contentBg: "bg-amber-50/50",
+      text: "TEILS-TEILS",
     },
     unknown: {
-      cardBorder: "border-slate-200",
-      headerBg: "bg-slate-50",
-      icon: <HelpCircle className="h-5 w-5 text-slate-500" />,
-      contentBg: "bg-slate-50/50",
+      border: "border-gray-200",
+      icon: <HelpCircle className="h-5 w-5 text-gray-500" />,
+      text: "UNBEKANNT",
     },
   };
 
-  const theme = themeConfig[claim.status];
+  const config = statusConfig[claim.status];
+
+  // Extract claim number if available
+  const claimNumber = parseInt(
+    claim.label?.match(/\d+/)?.[0] || (index + 1).toString()
+  );
+
+  // Format the full content in markdown for reliable display
+  const markdownContent = `
+## Behauptung ${claimNumber}
+
+${claim.content}
+
+### Bewertung: ${config.text}
+
+${claim.explanation}
+`;
 
   return (
-    <Card
-      className={cn(
-        "mb-6 overflow-hidden shadow-md border-2",
-        theme.cardBorder
-      )}
-    >
-      <CardHeader className={cn("pb-2", theme.headerBg)}>
-        <CardTitle className="text-sm md:text-base flex justify-between items-center">
-          <span className="flex items-center gap-2">
-            {theme.icon}
-            {claim.label || `Behauptung ${index + 1}`}
-          </span>
-          <VerdictBadge verdict={claim.verdict} status={claim.status} />
-        </CardTitle>
-      </CardHeader>
-      <CardContent className={cn("pt-4 text-sm", theme.contentBg)}>
-        <div className="bg-white/80 p-3 rounded-md mb-3 font-medium border-l-4 border-gray-300">
-          {claim.content}
-        </div>
-        <ReactMarkdown
-          components={{
-            p: ({ children }) => (
-              <p className="prose prose-sm max-w-none">{children}</p>
-            ),
-          }}
-        >
-          {claim.explanation}
-        </ReactMarkdown>
-      </CardContent>
+    <Card className={cn("p-4 border mb-4", config.border)}>
+      <div className="flex items-center mb-2 text-sm font-medium">
+        <span className="flex items-center gap-1">
+          {config.icon}
+          <span>Bewertung: {config.text}</span>
+        </span>
+      </div>
+      <div className="prose prose-sm max-w-none">
+        <ReactMarkdown>{markdownContent}</ReactMarkdown>
+      </div>
     </Card>
   );
 };

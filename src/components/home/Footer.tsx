@@ -9,7 +9,7 @@ export const Footer = ({ onImpressumClick }: FooterProps) => (
   <footer className="mt-12 pt-4 border-t border-gray-200">
     <div className="flex flex-col md:flex-row items-center justify-between text-sm text-gray-500">
       <div className="mb-2 md:mb-0">
-        © {new Date().getFullYear()} Ernst-Schering-Schule Berlin
+        © {new Date().getFullYear()} Joel Heil Escobar
       </div>
       <div className="flex space-x-4">
         <Link

@@ -10,31 +10,36 @@ export const FollowupForm = ({
   isSubmitting,
 }: FollowupFormProps) => {
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <Textarea
-        placeholder="Stelle eine Frage zur Bewertung..."
-        value={question}
-        onChange={(e) => onChange(e.target.value)}
-        className="min-h-24 resize-none bg-white border-blue-200 focus:border-blue-400 focus-visible:ring-blue-400"
-        disabled={isSubmitting}
-      />
-      <Button
-        type="submit"
-        className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
-        disabled={!question.trim() || isSubmitting}
-      >
-        {isSubmitting ? (
-          <>
-            <Loader className="h-4 w-4 animate-spin" />
-            Frage wird beantwortet...
-          </>
-        ) : (
-          <>
-            <SendIcon className="h-4 w-4" />
-            Frage stellen
-          </>
-        )}
-      </Button>
-    </form>
+    <div className="border border-gray-200 rounded-md p-4 mb-4">
+      <h3 className="font-medium text-lg mb-3">Stelle eine Frage</h3>
+      <form onSubmit={onSubmit} className="space-y-3">
+        <Textarea
+          placeholder="Stelle eine Frage zur Bewertung..."
+          value={question}
+          onChange={(e) => onChange(e.target.value)}
+          className="min-h-24 resize-none border-gray-300"
+          disabled={isSubmitting}
+        />
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            className="bg-blue-600 hover:bg-blue-700"
+            disabled={!question.trim() || isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader className="h-4 w-4 mr-2 animate-spin" />
+                <span>Wird bearbeitet...</span>
+              </>
+            ) : (
+              <>
+                <SendIcon className="h-4 w-4 mr-2" />
+                <span>Frage stellen</span>
+              </>
+            )}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
