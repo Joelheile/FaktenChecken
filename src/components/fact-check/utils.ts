@@ -3,92 +3,118 @@ import { ContentItem, StructuredClaim, VerdictStatus } from "./types";
 export const determineVerdict = (text: string): string => {
   const lowerText = text.toLowerCase();
 
-  // Check for explicit verdict markers first
-  if (
-    text.includes("**Ergebnis:** WAHR") ||
-    text.includes("**Bewertung:** WAHR") ||
-    text.includes("Bewertung: WAHR") ||
-    text.includes("Ergebnis: WAHR")
-  ) {
-    return "WAHR";
-  } else if (
-    text.includes("**Ergebnis:** FALSCH") ||
-    text.includes("**Bewertung:** FALSCH") ||
-    text.includes("Bewertung: FALSCH") ||
-    text.includes("Ergebnis: FALSCH")
-  ) {
-    return "FALSCH";
-  } else if (
-    text.includes("**Ergebnis:** TEILS-TEILS") ||
-    text.includes("**Bewertung:** TEILS-TEILS") ||
-    text.includes("**Ergebnis:** TEILWEISE WAHR") ||
-    text.includes("**Bewertung:** TEILWEISE WAHR") ||
-    text.includes("Bewertung: TEILS-TEILS") ||
-    text.includes("Ergebnis: TEILS-TEILS") ||
-    text.includes("Bewertung: TEILWEISE WAHR") ||
-    text.includes("Ergebnis: TEILWEISE WAHR")
-  ) {
-    return "TEILS-TEILS";
-  }
-
-  // Be more critical by default - let's add more weight to false indicators
-  const falseIndicators = [
-    "falsch",
-    "nicht korrekt",
-    "irreführend",
-    "fehlinformation",
-    "unrichtig",
-    "fehlerhaft",
-    "nicht zutreffend",
-    "unwahr",
-    "ungenau",
-    "fragwürdig",
-    "manipulativ",
-    "übertrieben",
+  // Prüfe zuerst auf explizite Bewertungsmarker
+  // Format: "**Bewertung:** WAHR" oder "Ergebnis: FALSCH" etc.
+  const explicitWahr = [
+    "**ergebnis:** wahr", 
+    "**bewertung:** wahr", 
+    "bewertung: wahr", 
+    "ergebnis: wahr",
+    "**ergebnis:** wahr",
+    "**bewertung:** wahr"
+  ];
+  
+  const explicitFalsch = [
+    "**ergebnis:** falsch", 
+    "**bewertung:** falsch", 
+    "bewertung: falsch", 
+    "ergebnis: falsch",
+    "**ergebnis:** falsch",
+    "**bewertung:** falsch"
+  ];
+  
+  const explicitTeilsTeils = [
+    "**ergebnis:** teils-teils", 
+    "**bewertung:** teils-teils",
+    "**ergebnis:** teilweise wahr", 
+    "**bewertung:** teilweise wahr",
+    "bewertung: teils-teils", 
+    "ergebnis: teils-teils",
+    "bewertung: teilweise wahr", 
+    "ergebnis: teilweise wahr",
+    "**ergebnis:** teils-teils",
+    "**bewertung:** teils-teils"
   ];
 
+  for (const marker of explicitWahr) {
+    if (lowerText.includes(marker)) {
+      return "WAHR";
+    }
+  }
+  
+  for (const marker of explicitFalsch) {
+    if (lowerText.includes(marker)) {
+      return "FALSCH";
+    }
+  }
+  
+  for (const marker of explicitTeilsTeils) {
+    if (lowerText.includes(marker)) {
+      return "TEILS-TEILS";
+    }
+  }
+
+  // Überprüfe auf "Bewertung: " oder "Ergebnis: " gefolgt von (wahr/falsch/teils-teils)
+  const bewertungPattern = /(?:bewertung|ergebnis):\s*(wahr|falsch|teils-teils|teilweise wahr)/i;
+  const bewertungMatch = lowerText.match(bewertungPattern);
+  
+  if (bewertungMatch && bewertungMatch[1]) {
+    const verdict = bewertungMatch[1].toLowerCase();
+    if (verdict.includes("wahr") && !verdict.includes("teilweise") && !verdict.includes("teils")) {
+      return "WAHR";
+    } else if (verdict.includes("falsch")) {
+      return "FALSCH";
+    } else if (verdict.includes("teils") || verdict.includes("teilweise")) {
+      return "TEILS-TEILS";
+    }
+  }
+
+  // Analysiere Indikatorwörter für unterschiedliche Verdikttypen
+  const falseIndicators = [
+    "falsch", "nicht korrekt", "irreführend", "fehlinformation",
+    "unrichtig", "fehlerhaft", "nicht zutreffend", "unwahr",
+    "ungenau", "fragwürdig", "manipulativ", "übertrieben",
+    "stimmt nicht", "ist nicht wahr", "trifft nicht zu", "ist falsch"
+  ];
+  
   const trueIndicators = [
-    "korrekt",
-    "richtig",
-    "wahr",
-    "stimmt",
-    "zutreffend",
-    "bestätigt",
-    "bewiesen",
-    "evidenz",
+    "korrekt", "richtig", "wahr", "stimmt", "zutreffend",
+    "bestätigt", "bewiesen", "evidenz", "trifft zu", "ist wahr",
+    "stimmt überein", "ist korrekt", "belegt"
   ];
 
   const falseCount = falseIndicators.reduce(
     (count, indicator) => count + countOccurrences(lowerText, indicator),
-    0,
+    0
   );
-
+  
   const trueCount = trueIndicators.reduce(
     (count, indicator) => count + countOccurrences(lowerText, indicator),
-    0,
+    0
   );
 
-  // Be more critical - require stronger evidence for "true" claims
+  // Kritische Bewertung basierend auf Indikatoren
   if (falseCount >= trueCount) {
     return "FALSCH";
   } else if (trueCount > falseCount + 2) {
-    // Need strong evidence for truth
     return "WAHR";
   } else if (
     lowerText.includes("teils-teils") ||
     lowerText.includes("teilweise wahr") ||
     lowerText.includes("teilweise richtig") ||
     lowerText.includes("teilweise falsch") ||
-    lowerText.includes("teilweise korrekt")
+    lowerText.includes("teilweise korrekt") ||
+    lowerText.includes("in teilen wahr") ||
+    lowerText.includes("in teilen falsch")
   ) {
     return "TEILS-TEILS";
-  } else {
-    // Default to partial if unclear
-    return "TEILS-TEILS";
   }
+
+  // Fallback bei Unklarheit
+  return "TEILS-TEILS";
 };
 
-// Count occurrences of a term but ignore if in double-negation
+// Zähle Vorkommen eines Terms (Negationen werden ausgeschlossen)
 function countOccurrences(text: string, term: string): number {
   const regex = new RegExp(`(?<!nicht\\s+)${term}`, "gi");
   const matches = text.match(regex) || [];

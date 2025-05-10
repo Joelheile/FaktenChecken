@@ -15,7 +15,7 @@ async function performWebSearch(searchTerm: string): Promise<string> {
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-nano-preview",
+        model: "gpt-3.5-turbo",
         messages: [
           {
             role: "system",
@@ -29,7 +29,23 @@ async function performWebSearch(searchTerm: string): Promise<string> {
         ],
         temperature: 0.1,
         max_tokens: 1000,
-        tools: [{ type: "web_search" }],
+        tools: [{
+          type: "web_search",
+          function: {
+            name: "web_search",
+            description: "Search the web for real-time information",
+            parameters: {
+              type: "object",
+              properties: {
+                query: {
+                  type: "string",
+                  description: "The search query"
+                }
+              },
+              required: ["query"]
+            }
+          }
+        }],
         tool_choice: { type: "web_search" },
       }),
     });
@@ -137,21 +153,46 @@ export async function performFactCheck(
 **Warum:** Wir haben weder Text im Video gefunden noch eine zu überprüfende Aussage.`;
     }
 
-    console.log("Performing fact check with ChatGPT 4.1 Nano");
+    console.log("Performing fact check with ChatGPT");
 
     let userPrompt = "";
     let searchTerm = "";
 
     if (transcript && transcript.trim().length >= 5) {
       if (statement && statement.trim().length >= 3) {
-        userPrompt = `Bitte überprüfe folgendes Transkript eines TikTok-Videos auf Fakten und Behauptungen: \n\n${transcript}\n\nBitte überprüfe besonders diese Aussage: ${statement}`;
+        userPrompt = `Deine Aufgabe ist es, das folgende Transkript eines TikTok-Videos auf überprüfbare Faktenbehauptungen zu analysieren. Identifiziere präzise die konkreten Behauptungen und bewerte sie:
+
+Transkript des Videos:
+"""
+${transcript}
+"""
+
+Zusätzlich soll folgende spezifische Aussage besonders gründlich überprüft werden:
+"""
+${statement}
+"""
+
+Bitte überprüfe zuerst die spezifische Aussage und dann weitere relevante Behauptungen aus dem Transkript. Zitiere die Behauptungen wörtlich oder so genau wie möglich.`;
         searchTerm = statement;
       } else {
-        userPrompt = `Bitte überprüfe folgendes Transkript eines TikTok-Videos auf Fakten und Behauptungen: \n\n${transcript}`;
+        userPrompt = `Deine Aufgabe ist es, das folgende Transkript eines TikTok-Videos auf überprüfbare Faktenbehauptungen zu analysieren. Identifiziere präzise die konkreten Behauptungen und bewerte sie:
+
+Transkript des Videos:
+"""
+${transcript}
+"""
+
+Bitte identifiziere und überprüfe die relevanten Faktenbehauptungen aus dem Transkript. Zitiere die Behauptungen wörtlich oder so genau wie möglich.`;
         searchTerm = transcript.split(".")[0];
       }
     } else if (statement && statement.trim().length >= 3) {
-      userPrompt = `Bitte überprüfe folgende Aussage auf ihren Wahrheitsgehalt: \n\n${statement}`;
+      userPrompt = `Deine Aufgabe ist es, die folgende Aussage auf ihren Wahrheitsgehalt zu überprüfen:
+
+"""
+${statement}
+"""
+
+Bitte analysiere die Aussage genau und nehme eine faktische Bewertung vor, die auf nachprüfbaren Fakten basiert.`;
       searchTerm = statement;
     }
 
@@ -159,7 +200,13 @@ export async function performFactCheck(
 
     let finalPrompt = userPrompt;
     if (webSearchResults && webSearchResults.trim().length > 0) {
-      finalPrompt += `\n\nHier sind aktuelle Informationen zu diesem Thema, die bei der Faktenprüfung helfen können:\n\n${webSearchResults}`;
+      finalPrompt += `\n\nHier sind aktuelle Informationen zu diesem Thema aus dem Web, die bei der Faktenprüfung helfen können:
+
+"""
+${webSearchResults}
+"""
+
+Nutze diese Informationen, um deine Bewertung zu unterstützen und tagesaktuelle Fakten zu berücksichtigen.`;
     }
 
     currentConversationMessages = [
@@ -182,7 +229,7 @@ export async function performFactCheck(
       body: JSON.stringify({
         model: "gpt-4.1-nano",
         messages: currentConversationMessages,
-        temperature: 0.2,
+        temperature: 0.1,
         max_tokens: 2000,
       }),
     });

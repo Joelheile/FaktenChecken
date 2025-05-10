@@ -8,7 +8,7 @@ export const Header = () => {
       <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-100/20 via-transparent to-purple-100/20 rounded-3xl blur-3xl" />
 
       <div className="flex flex-col items-center mb-6 md:mb-8 relative">
-        <div className="flex justify-center mb-4 transform transition-transform hover:scale-105 duration-300">
+        <div className="flex justify-center mb-4 transform transition-transform hover:scale-105 duration-300 bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
           <img
             src="/schule.png"
             alt="Ernst-Schering-Schule Logo"
