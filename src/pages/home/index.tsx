@@ -17,13 +17,33 @@ import {
 import { useEffect, useState } from "react";
 import { toast, Toaster } from "sonner";
 
-const getProgressMessage = (progress: number): string => {
-  if (progress < 40) {
+const getProgressMessage = (
+  progress: number,
+  hasStatement: boolean,
+  hasUrl: boolean
+): string => {
+  if (!hasUrl && hasStatement) {
+    if (progress < 30) {
+      return "Aussage wird aufbereitet...";
+    } else if (progress < 60) {
+      return "Internet wird nach aktuellen Fakten durchsucht...";
+    } else if (progress < 85) {
+      return "Fakten werden von KI ausgewertet...";
+    } else {
+      return "Ergebnisse werden zusammengestellt...";
+    }
+  }
+
+  if (progress < 30) {
     return "TikTok Video wird geladen...";
-  } else if (progress < 70) {
+  } else if (progress < 50) {
     return "Transkript wird aus TikTok Video erstellt...";
+  } else if (progress < 70) {
+    return "Internet wird nach aktuellen Fakten durchsucht...";
   } else if (progress < 90) {
-    return "Transkript wird von KI ausgewertet...";
+    return hasStatement
+      ? "Transkript und Aussage werden von KI ausgewertet..."
+      : "Transkript wird von KI ausgewertet...";
   } else {
     return "Ergebnisse werden zusammengestellt...";
   }
@@ -37,6 +57,8 @@ export const HomePage = () => {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [showExampleTip, setShowExampleTip] = useState(false);
+  const [hasStatement, setHasStatement] = useState(false);
+  const [hasUrl, setHasUrl] = useState(false);
 
   // Show example tip after a few seconds when no action has been taken
   useEffect(() => {
@@ -48,29 +70,36 @@ export const HomePage = () => {
     }
   }, [factCheckData, isLoading]);
 
-  const handleSubmit = async (url: string) => {
+  const handleSubmit = async (url: string, statement?: string) => {
     setError(null);
     setIsLoading(true);
     setProgress(0);
     setShowExampleTip(false);
+    setHasStatement(!!statement);
+    setHasUrl(!!url);
 
     // Track form submission with PostHog
     posthog.capture("tiktok_url_submitted", {
-      url_length: url.length,
+      url_length: url?.length || 0,
+      has_statement: !!statement,
+      has_url: !!url,
+      has_only_statement: !url && !!statement,
     });
 
+    // Bei reiner Aussage ohne URL schnellere Fortschrittsanzeige
+    const progressStep = !url && statement ? 5 : 2;
     const progressInterval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 95) {
           clearInterval(progressInterval);
           return prev;
         }
-        return prev + 2;
+        return prev + progressStep;
       });
     }, 800);
 
     try {
-      const result = await transcribeAndFactCheck(url);
+      const result = await transcribeAndFactCheck(url, statement);
       clearInterval(progressInterval);
       setProgress(100);
       setFactCheckData(result);
@@ -79,7 +108,9 @@ export const HomePage = () => {
       // Track successful fact check with PostHog
       posthog.capture("fact_check_completed", {
         success: true,
-        transcript_length: result.transcript.length,
+        transcript_length: result.transcript?.length || 0,
+        had_statement: !!statement,
+        had_url: !!url,
       });
 
       setTimeout(() => {
@@ -175,7 +206,7 @@ export const HomePage = () => {
   const handleExampleClick = () => {
     const exampleUrl =
       "https://www.tiktok.com/@derstandardat/video/7290526239980848417";
-    handleSubmit(exampleUrl);
+    handleSubmit(exampleUrl, undefined);
 
     posthog.capture("example_tiktok_clicked");
   };
@@ -207,7 +238,7 @@ export const HomePage = () => {
             {progress > 0 && (
               <ProgressIndicator
                 progress={progress}
-                message={getProgressMessage(progress)}
+                message={getProgressMessage(progress, hasStatement, hasUrl)}
               />
             )}
           </div>

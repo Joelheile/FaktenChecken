@@ -40,26 +40,38 @@ export class ApiError extends Error {
 /**
  * Main function to transcribe a TikTok video and perform fact checking on its content
  * 
- * @param tiktokUrl - The URL of the TikTok video to analyze
+ * @param tiktokUrl - The URL of the TikTok video to analyze (kann leer sein, wenn nur statement angegeben ist)
+ * @param statement - Optional statement to be fact-checked alongside or instead of the video content
  * @returns A promise that resolves to a FactCheckResponse
  * @throws ApiError if the transcription or fact-checking fails
  */
-export async function transcribeAndFactCheck(tiktokUrl: string): Promise<FactCheckResponse> {
-  console.log(`Analyzing TikTok URL: ${tiktokUrl}`);
+export async function transcribeAndFactCheck(tiktokUrl: string, statement?: string): Promise<FactCheckResponse> {
+  if (tiktokUrl) {
+    console.log(`Analyzing TikTok URL: ${tiktokUrl}`);
+  }
+  
+  if (statement) {
+    console.log(`Statement to check: ${statement}`);
+  }
   
   // Reset conversation context for new request
   resetConversation();
   
   try {
-    // Get transcript from Apify API
-    const transcript = await fetchTikTokTranscript(tiktokUrl);
+    let transcript = "";
     
-    if (!transcript || transcript.trim().length < 5) {
-      console.warn('Retrieved empty or very short transcript');
+    // Nur TikTok Video transkribieren wenn eine URL angegeben wurde
+    if (tiktokUrl) {
+      // Get transcript from Apify API
+      transcript = await fetchTikTokTranscript(tiktokUrl);
+      
+      if (!transcript || transcript.trim().length < 5) {
+        console.warn('Retrieved empty or very short transcript');
+      }
     }
     
     // Get fact check from OpenAI
-    const factCheck = await performFactCheck(transcript);
+    const factCheck = await performFactCheck(transcript, statement);
     
     return {
       transcript,
@@ -89,14 +101,14 @@ export async function transcribeAndFactCheck(tiktokUrl: string): Promise<FactChe
       
       // Generic error fallback
       throw new ApiError(
-        `Error during TikTok analysis: ${errorMessage}`,
+        `Error during analysis: ${errorMessage}`,
         ApiErrorType.NETWORK_ERROR
       );
     }
     
     // For non-Error objects
     throw new ApiError(
-      'An unknown error occurred during TikTok analysis',
+      'An unknown error occurred during analysis',
       ApiErrorType.NETWORK_ERROR
     );
   }
