@@ -55,7 +55,7 @@ async function testApify() {
         console.log("\nTranscript found:", typeof item.transcript);
         console.log(
           "\nSample transcript (first 100 chars):",
-          item.transcript.substring(0, 100),
+          item.transcript.substring(0, 100)
         );
       } else {
         console.log("\nNo transcript field found");
@@ -65,7 +65,7 @@ async function testApify() {
         console.log("\nText field found:", typeof item.text);
         console.log(
           "\nSample text (first 100 chars):",
-          item.text.substring(0, 100),
+          item.text.substring(0, 100)
         );
       } else {
         console.log("\nNo text field found");

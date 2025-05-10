@@ -37,4 +37,4 @@ export interface FollowupFormProps {
   question: string;
   onChange: (value: string) => void;
   isSubmitting: boolean;
-}
+} 

@@ -9,8 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test:apify": "vite-node src/test-apify-client.ts",
-    "format": "prettier --write ."
+    "test:apify": "vite-node src/test-apify-client.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
