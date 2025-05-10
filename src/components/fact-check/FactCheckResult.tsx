@@ -112,7 +112,7 @@ export const FactCheckResult = ({
   const { verdict, status } = getOverallVerdict(factCheck, hasFollowup);
   const parsedContent = parseFactCheckContent(factCheck, hasFollowup);
   const claims = parsedContent.filter(
-    (item): item is StructuredClaim => item.type === "claim"
+    (item): item is StructuredClaim => item.type === "claim",
   );
 
   // Get verdict text based on status

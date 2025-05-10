@@ -12,16 +12,16 @@ export const useIsMobile = (): boolean => {
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     // Check on mount
     checkIsMobile();
-    
+
     // Add resize listener
     window.addEventListener("resize", checkIsMobile);
-    
+
     // Clean up
     return () => window.removeEventListener("resize", checkIsMobile);
   }, []);
 
   return isMobile;
-}; 
+};

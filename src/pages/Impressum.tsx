@@ -3,6 +3,18 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
+type SectionProps = {
+  title: string;
+  children: React.ReactNode;
+};
+
+const Section = ({ title, children }: SectionProps) => (
+  <section className="mb-6">
+    <h2 className="text-xl font-semibold mb-2">{title}</h2>
+    {children}
+  </section>
+);
+
 const Impressum = () => {
   useEffect(() => {
     posthog.capture("impressum_page_viewed");
@@ -30,37 +42,32 @@ const Impressum = () => {
 
         <h1 className="text-3xl font-bold mb-6">Impressum</h1>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Angaben gemäß § 5 TMG</h2>
+        <Section title="Angaben gemäß § 5 TMG">
           <p>Joel Heil Escobar</p>
           <p>Köpenicker Straße 43</p>
           <p>10179 Berlin</p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Kontakt</h2>
+        <Section title="Kontakt">
           <p>Telefon: +49 171 5871414</p>
           <p>E-Mail: joel@cinoramic.io</p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Umsatzsteuer-ID</h2>
+        <Section title="Umsatzsteuer-ID">
           <p>
             Umsatzsteuer-Identifikationsnummer gemäß §27 a Umsatzsteuergesetz:
           </p>
           <p>DE366514999</p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Kooperation</h2>
+        <Section title="Kooperation">
           <p>
             Dies ist eine Kooperation mit Stephan Borchadt von der Ernst
             Scheering Schule.
           </p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Haftung für Inhalte</h2>
+        <Section title="Haftung für Inhalte">
           <p>
             Als Diensteanbieter sind wir gemäß § 7 Abs.1 TMG für eigene Inhalte
             auf diesen Seiten nach den allgemeinen Gesetzen verantwortlich. Nach
@@ -77,10 +84,9 @@ const Impressum = () => {
             Bekanntwerden von entsprechenden Rechtsverletzungen werden wir diese
             Inhalte umgehend entfernen.
           </p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Haftung für Links</h2>
+        <Section title="Haftung für Links">
           <p>
             Unser Angebot enthält Links zu externen Websites Dritter, auf deren
             Inhalte wir keinen Einfluss haben. Deshalb können wir für diese
@@ -97,10 +103,9 @@ const Impressum = () => {
             zumutbar. Bei Bekanntwerden von Rechtsverletzungen werden wir
             derartige Links umgehend entfernen.
           </p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Urheberrecht</h2>
+        <Section title="Urheberrecht">
           <p>
             Die durch die Seitenbetreiber erstellten Inhalte und Werke auf
             diesen Seiten unterliegen dem deutschen Urheberrecht. Die
@@ -119,10 +124,9 @@ const Impressum = () => {
             Rechtsverletzungen werden wir derartige Inhalte umgehend entfernen.
           </p>
           <p>Quelle: www.e-recht24.de</p>
-        </section>
+        </Section>
 
-        <section className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">Online-Streitbeilegung</h2>
+        <Section title="Online-Streitbeilegung">
           <p>
             Die Europäische Kommission stellt eine Plattform für die
             außergerichtliche Online-Streitbeilegung (OS-Plattform) bereit,
@@ -140,7 +144,7 @@ const Impressum = () => {
             Wir sind zur Teilnahme an einem Streitbeilegungsverfahren vor einer
             Verbraucherschlichtungsstelle weder verpflichtet noch bereit.
           </p>
-        </section>
+        </Section>
       </div>
     </div>
   );

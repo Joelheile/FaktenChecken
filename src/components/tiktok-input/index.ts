@@ -1,1 +1,1 @@
-export * from './TikTokInput';
+export * from "./TikTokInput";
