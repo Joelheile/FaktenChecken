@@ -4,19 +4,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { posthog } from "@/lib/posthog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes as RouterRoutes,
+  useLocation,
+} from "react-router-dom";
 import Impressum from "./pages/Impressum";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
-// PostHog tracking component
-const PostHogPageview = () => {
+const PageViewTracker = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Track pageview with current URL properties when location changes
     posthog.capture("$pageview", {
       $current_url: location.pathname,
       path: location.pathname,
@@ -30,13 +41,12 @@ const PostHogPageview = () => {
 
 const AppRoutes = () => (
   <>
-    <PostHogPageview />
-    <Routes>
+    <PageViewTracker />
+    <RouterRoutes>
       <Route path="/" element={<Index />} />
       <Route path="/impressum" element={<Impressum />} />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
-    </Routes>
+    </RouterRoutes>
   </>
 );
 

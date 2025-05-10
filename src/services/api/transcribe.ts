@@ -1,41 +1,6 @@
-import { fetchTikTokTranscript } from './apify';
-import { askFollowupQuestion as askOpenAIFollowup, performFactCheck, resetConversation } from './openai';
-
-/**
- * Response structure for fact checking operations
- */
-export interface FactCheckResponse {
-  /** The transcript text extracted from the TikTok video */
-  transcript: string;
-  /** The fact-checking analysis performed on the transcript */
-  factCheck: string;
-  /** Optional conversation ID to maintain context across requests */
-  conversationId?: string;
-}
-
-/**
- * Error types that can occur during API operations
- */
-export enum ApiErrorType {
-  TRANSCRIPTION_ERROR = 'transcription_error',
-  FACT_CHECK_ERROR = 'fact_check_error',
-  FOLLOWUP_ERROR = 'followup_error',
-  NETWORK_ERROR = 'network_error',
-  AUTH_ERROR = 'auth_error',
-}
-
-/**
- * Custom error class for API-related errors
- */
-export class ApiError extends Error {
-  type: ApiErrorType;
-  
-  constructor(message: string, type: ApiErrorType) {
-    super(message);
-    this.name = 'ApiError';
-    this.type = type;
-  }
-}
+import { fetchTikTokTranscript } from '../apify';
+import { performFactCheck, resetConversation } from '../openai';
+import { ApiError, ApiErrorType, FactCheckResponse } from './types';
 
 /**
  * Main function to transcribe a TikTok video and perform fact checking on its content
@@ -100,27 +65,4 @@ export async function transcribeAndFactCheck(tiktokUrl: string): Promise<FactChe
       ApiErrorType.NETWORK_ERROR
     );
   }
-}
-
-/**
- * Handles follow-up questions about a previously performed fact check
- * 
- * @param question - The follow-up question to ask
- * @returns A promise that resolves to the answer string
- * @throws ApiError if the follow-up question processing fails
- */
-export async function askFollowupQuestion(question: string): Promise<string> {
-  try {
-    // Get the answer from OpenAI
-    const answer = await askOpenAIFollowup(question);
-    
-    // Format and return the answer with the follow-up question marker for UI display
-    return `--- Folgende Frage ---\n\n${question}\n\n${answer}`;
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new ApiError(
-      `Failed to answer follow-up question: ${errorMessage}`,
-      ApiErrorType.FOLLOWUP_ERROR
-    );
-  }
-}
+} 

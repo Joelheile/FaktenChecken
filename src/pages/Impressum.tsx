@@ -5,19 +5,17 @@ import { Link } from "react-router-dom";
 
 const Impressum = () => {
   useEffect(() => {
-    // Track Impressum page view
     posthog.capture("impressum_page_viewed");
   }, []);
 
   const handleBackClick = () => {
-    // Track when a user clicks back to homepage
     posthog.capture("back_to_home_click", {
       source: "impressum_page",
     });
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">  
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
       <div className="container max-w-3xl mx-auto py-8 px-4">
         <div className="mb-6">
           <Link

@@ -9,14 +9,12 @@ import {
 import { AlertCircle, KeyRound } from "lucide-react";
 import { useEffect, useState } from "react";
 
-// Environment variables information card
 const ApiKeyInfo = () => {
   const [envVars, setEnvVars] = useState({
     apify: false,
     openai: false,
   });
 
-  // Verify environment variables on component mount
   useEffect(() => {
     const apifyConfigured = Boolean(import.meta.env.VITE_APIFY_API_TOKEN);
     const openaiConfigured = Boolean(import.meta.env.VITE_OPENAI_API_KEY);
@@ -26,7 +24,6 @@ const ApiKeyInfo = () => {
       openai: openaiConfigured,
     });
 
-    // Output for debugging
     console.log("Environment variables status:", {
       apify: apifyConfigured ? "Configured" : "Missing",
       openai: openaiConfigured ? "Configured" : "Missing",

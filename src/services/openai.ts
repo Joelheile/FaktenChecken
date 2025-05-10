@@ -1,13 +1,8 @@
-// Get OpenAI API key from environment variables
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || "";
 import { FACT_CHECK_PROMPT, FOLLOWUP_PROMPT } from "./prompts";
 
-// Store conversation context for follow-up questions
 let currentConversationMessages: Array<{role: string, content: string}> = [];
 
-/**
- * Performs fact checking on a transcript using ChatGPT
- */
 export async function performFactCheck(transcript: string): Promise<string> {
   try {
     if (!OPENAI_API_KEY) {
@@ -25,7 +20,6 @@ export async function performFactCheck(transcript: string): Promise<string> {
 **Einfach erklärt:** Das Video mischt wahre Informationen mit falschen Dingen. Du solltest vorsichtig sein, was du davon glaubst.`;
     }
 
-    // Check if transcript is empty or very small
     if (!transcript || transcript.trim().length < 5) {
       console.log("Empty transcript, returning simple message");
       return `**Behauptung 1:** Es gibt keinen Text im Video.
@@ -36,7 +30,6 @@ export async function performFactCheck(transcript: string): Promise<string> {
 
     console.log("Performing fact check with ChatGPT 3.5 Turbo");
     
-    // Reset conversation history when starting a new fact check
     currentConversationMessages = [
       {
         role: "system",
@@ -48,7 +41,6 @@ export async function performFactCheck(transcript: string): Promise<string> {
       }
     ];
     
-    // Using the OpenAI API with the cheaper gpt-3.5-turbo model
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -69,7 +61,6 @@ export async function performFactCheck(transcript: string): Promise<string> {
       throw new Error(`OpenAI API Error: ${data.error.message}`);
     }
     
-    // Add the assistant's response to the conversation history
     const assistantResponse = data.choices[0].message.content;
     currentConversationMessages.push({
       role: "assistant",
@@ -83,9 +74,6 @@ export async function performFactCheck(transcript: string): Promise<string> {
   }
 }
 
-/**
- * Handles follow-up questions about the fact check
- */
 export async function askFollowupQuestion(question: string): Promise<string> {
   try {
     if (!OPENAI_API_KEY) {
@@ -99,8 +87,6 @@ export async function askFollowupQuestion(question: string): Promise<string> {
 
     console.log(`Sending follow-up question to ChatGPT 3.5 Turbo: ${question}`);
     
-    // Update system message for followup to be more kid-friendly
-    // Find and replace the system message
     const systemMessageIndex = currentConversationMessages.findIndex(msg => msg.role === "system");
     if (systemMessageIndex !== -1) {
       currentConversationMessages[systemMessageIndex] = {
@@ -109,13 +95,11 @@ export async function askFollowupQuestion(question: string): Promise<string> {
       };
     }
     
-    // Add the user's follow-up question to the conversation history
     currentConversationMessages.push({
       role: "user",
       content: question
     });
     
-    // Send the updated conversation to ChatGPT
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -136,7 +120,6 @@ export async function askFollowupQuestion(question: string): Promise<string> {
       throw new Error(`OpenAI API Error: ${data.error.message}`);
     }
     
-    // Add the assistant's response to the conversation history
     const assistantResponse = data.choices[0].message.content;
     currentConversationMessages.push({
       role: "assistant",
@@ -150,9 +133,6 @@ export async function askFollowupQuestion(question: string): Promise<string> {
   }
 }
 
-/**
- * Resets the current conversation
- */
 export function resetConversation(): void {
   currentConversationMessages = [];
-} 
+}

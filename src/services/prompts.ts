@@ -1,7 +1,3 @@
-/**
- * System prompts for the OpenAI API
- */
-
 export const FACT_CHECK_PROMPT = `Du bist ein Faktenprüfer für 12-jährige Kinder. Deine Aufgabe ist es, Behauptungen in TikTok-Videos zu analysieren und zu entscheiden, ob sie wahr oder falsch sind.
 
 ### Wie du schreiben sollst:
@@ -30,4 +26,4 @@ export const FOLLOWUP_PROMPT = `Antworte auf die Frage des Kindes:
 - Mit kurzen Sätzen
 - Ohne komplizierte Wörter
 - Nutze Markdown für bessere Lesbarkeit
-`; 
+`;

@@ -11,7 +11,6 @@ const NotFound = () => {
       location.pathname
     );
 
-    // Track 404 errors
     posthog.capture("404_error", {
       path: location.pathname,
     });
