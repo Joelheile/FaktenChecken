@@ -12,7 +12,7 @@ export const TranscriptToggle = ({
   onToggle,
   transcript,
 }: TranscriptToggleProps) => (
-  <div className="border border-border rounded-lg overflow-hidden">
+  <div className="border border-border rounded-lg overflow-hidden opacity-70 hover:opacity-100 transition-opacity">
     <button
       onClick={onToggle}
       className="w-full flex items-center justify-between p-3 bg-muted/30 hover:bg-muted/50 transition-colors"
@@ -20,7 +20,7 @@ export const TranscriptToggle = ({
       <div className="flex items-center gap-2">
         <FileText className="h-4 w-4 text-muted-foreground" />
         <span className="font-display font-semibold text-sm">
-          TikTok Transkript
+          Original-Transkript anzeigen
         </span>
       </div>
       <ChevronDown

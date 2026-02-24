@@ -28,6 +28,13 @@ const VERDICT_LABEL: Record<string, string> = {
   unknown: "UNBEKANNT",
 };
 
+const VERDICT_BG: Record<string, string> = {
+  true: "bg-verdict-true/5 border-verdict-true/20",
+  false: "bg-verdict-false/5 border-verdict-false/20",
+  partial: "bg-verdict-partial/5 border-verdict-partial/20",
+  unknown: "bg-muted/30 border-border",
+};
+
 export const FactCheckResult = ({
   transcript,
   factCheck,
@@ -127,18 +134,20 @@ export const FactCheckResult = ({
     extractSimpleExplanation(factCheck) ||
     "Bitte prüfen Sie die einzelnen Behauptungen für Details.";
 
+  const verdictBg = VERDICT_BG[status] ?? VERDICT_BG.unknown;
+
   return (
     <div className="mt-6 space-y-6 fade-in-up">
-      {/* Summary */}
-      <div className="border border-border rounded-lg bg-card p-4 md:p-5">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="font-display text-lg font-bold">Zusammenfassung</h2>
+      {/* Fazit Card */}
+      <div className={`border-2 rounded-lg p-5 md:p-6 ${verdictBg}`}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold">Fazit</h2>
           <VerdictBadge
             verdict={VERDICT_LABEL[status] ?? "UNBEKANNT"}
             status={status}
           />
         </div>
-        <div className="prose prose-sm max-w-none font-body text-muted-foreground [&_p]:leading-relaxed [&_p]:text-sm">
+        <div className="prose prose-sm max-w-none font-body text-foreground/80 [&_p]:leading-relaxed [&_p]:text-sm">
           <ReactMarkdown>{summaryText}</ReactMarkdown>
         </div>
       </div>
@@ -155,17 +164,19 @@ export const FactCheckResult = ({
 
       {formatFollowupQuestions(factCheck)}
 
-      <TranscriptToggle
-        isOpen={isTranscriptOpen}
-        onToggle={() => setIsTranscriptOpen(!isTranscriptOpen)}
-        transcript={transcript}
-      />
-
+      {/* Followup Form */}
       <FollowupForm
         onSubmit={handleFollowupSubmit}
         question={followupQuestion}
         onChange={setFollowupQuestion}
         isSubmitting={isSubmitting || isLoading}
+      />
+
+      {/* Transcript at the very bottom */}
+      <TranscriptToggle
+        isOpen={isTranscriptOpen}
+        onToggle={() => setIsTranscriptOpen(!isTranscriptOpen)}
+        transcript={transcript}
       />
     </div>
   );
