@@ -63,7 +63,7 @@ export default async function handler(
       body: JSON.stringify({
         model: "gpt-5-mini-2025-08-07",
         messages: updatedMessages,
-        temperature: 0.3,
+        temperature: 0.2,
       }),
     });
 
