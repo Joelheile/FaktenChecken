@@ -83,7 +83,7 @@ export default async function handler(
   }
 
   // Check for API token
-  const apiToken = process.env.APIFY_API_TOKEN || process.env.VITE_APIFY_API_TOKEN;
+  const apiToken = process.env.APIFY_API_TOKEN;
   if (!apiToken) {
     res.status(500).json({ error: 'Server configuration error: missing API token' });
     return;
