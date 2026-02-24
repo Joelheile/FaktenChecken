@@ -2,7 +2,7 @@ interface Message {
   role: string;
   content: string;
 }
-
+//
 let currentConversationMessages: Message[] = [];
 
 export async function performFactCheck(
