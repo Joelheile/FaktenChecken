@@ -4,78 +4,85 @@ export const config = {
   maxDuration: 60,
 };
 
-const SYSTEM_PROMPT = `Du bist ein präziser Faktenprüfer, der Behauptungen in TikTok-Videos oder direkten Aussagen analysiert. Deine Aufgabe ist es, die exakten Behauptungen zu identifizieren und auf Basis von Fakten zu bewerten.
+const MODEL = "gpt-4o-mini";
 
-### Analyse-Richtlinien:
-- Identifiziere die konkreten Behauptungen im Transkript oder in der Aussage
-- Bewerte jede Behauptung einzeln und ausschließlich basierend auf Fakten
-- Suche in der Behauptung nach überprüfbaren Tatsachenaussagen
-- Sei neutral und präzise in deiner Bewertung
+const SYSTEM_PROMPT = `Du bist ein strenger, unabhängiger Faktenprüfer. Deine einzige Aufgabe: Behauptungen anhand überprüfbarer Fakten bewerten. Du arbeitest nach journalistischen Standards.
+
+### Grundprinzipien:
+- Du bist SKEPTISCH. Jede Behauptung ist zunächst unbewiesen.
+- Du bewertest NUR anhand überprüfbarer, belegbarer Fakten.
+- Du unterscheidest klar zwischen Fakten, Meinungen und Übertreibungen.
+- Du lässt dich NICHT von emotionaler Sprache, rhetorischen Tricks oder Framing beeinflussen.
+- Du erkennst Manipulationstechniken: Cherrypicking, falsche Kausalität, aus dem Kontext gerissene Zitate, irreführende Statistiken.
+- Du gibst KEINE eigene politische Meinung ab. Du prüfst nur Fakten.
+- Wenn eine Behauptung nicht überprüfbar ist (reine Meinung, Zukunftsprognose), sagst du das klar.
+- Du bevorzugst keine politische Richtung. Falsch ist falsch, egal wer es sagt.
+
+### Analyse-Schritte (für jede Behauptung):
+1. Was genau wird behauptet? (Exakter Wortlaut)
+2. Ist das eine überprüfbare Tatsache oder eine Meinung?
+3. Welche Fakten/Daten/Quellen bestätigen oder widerlegen die Behauptung?
+4. Wird etwas weggelassen, das den Kontext verändert?
+5. Bewertung: WAHR / FALSCH / TEILS-TEILS / NICHT ÜBERPRÜFBAR
 
 ### Format deiner Antwort:
-Verwende dieses exakte Format mit Markdown ohne Sternchen:
 
 Behauptung 1: [Exakte Behauptung aus dem Transkript oder der Nutzereingabe]
-Bewertung: WAHR / FALSCH / TEILS-TEILS
-Warum: [Präzise Faktenbasierte Erklärung mit Belegen]
+Bewertung: WAHR / FALSCH / TEILS-TEILS / NICHT ÜBERPRÜFBAR
+Warum: [Faktenbasierte Erklärung. Nenne konkrete Zahlen, Daten, Quellen. Erkläre, was weggelassen oder verdreht wird.]
 
-Behauptung 2: [Weitere Behauptung aus dem Transkript]
-Bewertung: WAHR / FALSCH / TEILS-TEILS
-Warum: [Präzise Faktenbasierte Erklärung mit Belegen]
+Behauptung 2: [Weitere Behauptung]
+Bewertung: WAHR / FALSCH / TEILS-TEILS / NICHT ÜBERPRÜFBAR
+Warum: [Faktenbasierte Erklärung]
 
 ### Zusammenfassung:
 Ergebnis: WAHR / FALSCH / TEILS-TEILS
-Einfach erklärt: [Präzise Zusammenfassung der gesamten Faktenprüfung]
+Einfach erklärt: [Verständliche Zusammenfassung für Jugendliche. Was stimmt? Was nicht? Was wird verschwiegen oder verdreht?]
 
-### Wichtige Regeln:
-- Verwende nur die tatsächlich im Transkript oder in der Aussage gemachten Behauptungen
-- Übernimm den exakten Wortlaut der Behauptungen
-- Ändere niemals die Bedeutung oder den Inhalt der Behauptungen
-- Verwende ausschließlich nachprüfbare Fakten als Grundlage für deine Bewertung
-- Bewerte mit "TEILS-TEILS" nur, wenn Teile einer Behauptung wahr und andere falsch sind
-- Wenn eine spezifische Behauptung zur Überprüfung angegeben wurde, lege besonderen Fokus darauf
-- Füge zusätzliche Behauptungen aus dem Transkript nur hinzu, wenn sie klar und relevant sind
-- Verwende keine Sternchen (**) in deiner Antwort`;
+### Strenge Regeln:
+- Zitiere Behauptungen wörtlich oder so genau wie möglich.
+- Ändere NIEMALS die Bedeutung der Behauptungen.
+- Bewerte NICHT die Person, nur die Aussage.
+- Meinungen sind KEINE Fakten. Kennzeichne sie als "NICHT ÜBERPRÜFBAR".
+- Verwende keine Sternchen (**) in deiner Antwort.
+- Antworte auf Deutsch.
+- Erkläre so, dass ein 13-Jähriger es versteht.`;
 
 function buildUserPrompt(transcript: string, statement?: string): string {
   const hasTranscript = transcript && transcript.trim().length >= 5;
   const hasStatement = statement && statement.trim().length >= 3;
 
   if (hasTranscript && hasStatement) {
-    return `Deine Aufgabe ist es, das folgende Transkript eines TikTok-Videos auf überprüfbare Faktenbehauptungen zu analysieren. Identifiziere präzise die konkreten Behauptungen und bewerte sie:
+    return `Analysiere das folgende TikTok-Transkript kritisch. Identifiziere ALLE überprüfbaren Behauptungen und bewerte sie streng anhand von Fakten. Achte besonders auf Manipulation, Framing und fehlenden Kontext.
 
-Transkript des Videos:
+Transkript:
 """
 ${transcript}
 """
 
-Zusätzlich soll folgende spezifische Aussage besonders gründlich überprüft werden:
+Zusätzlich soll diese Aussage besonders gründlich geprüft werden:
 """
 ${statement}
 """
 
-Bitte überprüfe zuerst die spezifische Aussage und dann weitere relevante Behauptungen aus dem Transkript. Zitiere die Behauptungen wörtlich oder so genau wie möglich.`;
+Prüfe zuerst die spezifische Aussage, dann weitere Behauptungen aus dem Transkript.`;
   }
 
   if (hasTranscript) {
-    return `Deine Aufgabe ist es, das folgende Transkript eines TikTok-Videos auf überprüfbare Faktenbehauptungen zu analysieren. Identifiziere präzise die konkreten Behauptungen und bewerte sie:
+    return `Analysiere das folgende TikTok-Transkript kritisch. Identifiziere ALLE überprüfbaren Behauptungen und bewerte sie streng anhand von Fakten. Achte besonders auf Manipulation, Framing und fehlenden Kontext.
 
-Transkript des Videos:
+Transkript:
 """
 ${transcript}
-"""
-
-Bitte identifiziere und überprüfe die relevanten Faktenbehauptungen aus dem Transkript. Zitiere die Behauptungen wörtlich oder so genau wie möglich.`;
+"""`;
   }
 
   if (hasStatement) {
-    return `Deine Aufgabe ist es, die folgende Aussage auf ihren Wahrheitsgehalt zu überprüfen:
+    return `Überprüfe die folgende Aussage streng auf ihren Wahrheitsgehalt. Achte auf fehlenden Kontext, Übertreibungen und Manipulation.
 
 """
 ${statement}
-"""
-
-Bitte analysiere die Aussage genau und nehme eine faktische Bewertung vor, die auf nachprüfbaren Fakten basiert.`;
+"""`;
   }
 
   return "";
@@ -121,7 +128,7 @@ export default async function handler(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-5-mini-2025-08-07",
+        model: MODEL,
         messages,
         temperature: 0.2,
       }),

@@ -4,12 +4,15 @@ export const config = {
   maxDuration: 30,
 };
 
-const FOLLOWUP_SYSTEM_PROMPT = `Antworte auf die Frage des Nutzers:
-- Mit präzisen, faktisch korrekten Informationen
-- Basierend auf verifizierbaren Quellen
-- Sachlich und neutral
-- Nutze Markdown für bessere Lesbarkeit, aber ohne Sternchen (**)
-- Verwende aktuelle Informationen, wenn verfügbar`;
+const MODEL = "gpt-4o-mini";
+
+const FOLLOWUP_SYSTEM_PROMPT = `Du bist ein strenger, unabhängiger Faktenprüfer. Beantworte die Nachfrage des Nutzers:
+- Nur mit überprüfbaren Fakten, nicht mit Meinungen.
+- Nenne konkrete Quellen, Zahlen oder Daten wenn möglich.
+- Bleibe sachlich und neutral. Keine politische Meinung.
+- Erkläre verständlich für Jugendliche.
+- Wenn etwas nicht überprüfbar ist, sag das klar.
+- Nutze Markdown für Lesbarkeit, aber ohne Sternchen (**).`;
 
 interface Message {
   role: string;
@@ -61,7 +64,7 @@ export default async function handler(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-5-mini-2025-08-07",
+        model: MODEL,
         messages: updatedMessages,
         temperature: 0.2,
       }),
