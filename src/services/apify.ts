@@ -1,21 +1,3 @@
-export function extractTikTokVideoId(url: string): string {
-  const standardRegex = /video\/(\d+)/;
-  const standardMatch = url.match(standardRegex);
-
-  if (standardMatch) {
-    return standardMatch[1];
-  }
-
-  const shortUrlRegex = /vm\.tiktok\.com\/(\w+)/i;
-  const shortUrlMatch = url.match(shortUrlRegex);
-
-  if (shortUrlMatch) {
-    return `shorturl-${shortUrlMatch[1]}`;
-  }
-
-  return "";
-}
-
 export async function fetchTikTokTranscript(
   tiktokUrl: string,
 ): Promise<string> {
@@ -36,6 +18,11 @@ export async function fetchTikTokTranscript(
     }
 
     const data = await response.json();
+
+    if (!data.transcript || typeof data.transcript !== "string") {
+      throw new Error("Invalid response from transcript API");
+    }
+
     return data.transcript;
   } catch (error: any) {
     console.error("Error in fetchTikTokTranscript:", error);

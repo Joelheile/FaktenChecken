@@ -35,7 +35,14 @@ Warum: Wir haben weder Text im Video gefunden noch eine zu überprüfende Aussag
     }
 
     const data = await response.json();
-    currentConversationMessages = data.messages || [];
+
+    if (!data.factCheck || typeof data.factCheck !== "string") {
+      throw new Error("Invalid response from fact check API");
+    }
+
+    currentConversationMessages = Array.isArray(data.messages)
+      ? data.messages
+      : [];
 
     return data.factCheck;
   } catch (error) {
@@ -71,7 +78,14 @@ export async function askFollowupQuestion(question: string): Promise<string> {
     }
 
     const data = await response.json();
-    currentConversationMessages = data.messages || [];
+
+    if (!data.answer || typeof data.answer !== "string") {
+      throw new Error("Invalid response from followup API");
+    }
+
+    currentConversationMessages = Array.isArray(data.messages)
+      ? data.messages
+      : currentConversationMessages;
 
     return data.answer;
   } catch (error) {
