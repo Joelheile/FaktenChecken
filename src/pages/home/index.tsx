@@ -108,7 +108,7 @@ export const HomePage = () => {
 
       if (error instanceof Error) {
         errorMessage = error.message;
-        errorType = error.name === "ApiError" ? (error as any).type : "";
+        errorType = error.name === "ApiError" ? (error as Error & { type?: string }).type : "";
       }
 
       setError(errorMessage);
