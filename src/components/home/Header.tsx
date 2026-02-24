@@ -1,29 +1,19 @@
-import { useIsMobile } from "@/hooks/use-mobile";
+export const Header = () => (
+  <header className="flex flex-col items-center text-center fade-in-up">
+    <div className="mb-6 bg-primary/80 rounded-xl px-5 py-2.5">
+      <img
+        src="/schule.png"
+        alt="Ernst-Schering-Schule"
+        className="h-12 md:h-14"
+      />
+    </div>
 
-export const Header = () => {
-  const isMobile = useIsMobile();
+    <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-800 leading-tight mb-3">
+      TikTok <span className="text-primary">FaktenCheck</span>
+    </h1>
 
-  return (
-    <header className="flex flex-col items-center relative">
-      <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-blue-100/20 via-transparent to-purple-100/20 rounded-3xl blur-3xl" />
-
-      <div className="flex flex-col items-center mb-6 md:mb-8 relative">
-        <div className="flex justify-center mb-4 transform transition-transform hover:scale-105 duration-300 bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-          <img
-            src="/schule.png"
-            alt="Ernst-Schering-Schule Logo"
-            className="h-16 md:h-20"
-          />
-        </div>
-        <h1 className="text-2xl md:text-4xl font-bold text-center mb-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
-          TikTok Faktencheck
-        </h1>
-        <p className="text-sm md:text-base text-gray-600 text-center max-w-md">
-          Du hast ein TikTok-Video gesehen und bist dir nicht sicher, ob die
-          Behauptungen darin stimmen? Unser KI-Tool überprüft die Fakten für
-          dich!
-        </p>
-      </div>
-    </header>
-  );
-};
+    <p className="font-body text-base text-muted-foreground max-w-sm leading-relaxed">
+      Stimmt das wirklich, was du auf TikTok gesehen hast? Finde es hier heraus.
+    </p>
+  </header>
+);

@@ -1,142 +1,124 @@
-import { Copy, Globe, InfoIcon, Share2 } from "lucide-react";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  type CarouselApi,
+} from "@/components/ui/carousel";
+import { cn } from "@/lib/utils";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
+const STEPS = [
+  {
+    number: "1",
+    title: "Link kopieren",
+    description:
+      "Öffne das TikTok, tippe auf Teilen und dann auf Link kopieren. Du kannst auch einfach eine Aussage eintippen.",
+  },
+  {
+    number: "2",
+    title: "Hier einfügen",
+    description:
+      "Füge den Link oben ein oder schreibe eine Aussage, die du checken willst.",
+  },
+  {
+    number: "3",
+    title: "Check starten",
+    description:
+      "Drücke auf Überprüfen. Wir schauen dann im Internet nach, was wirklich stimmt.",
+  },
+  {
+    number: "4",
+    title: "Ergebnis lesen",
+    description:
+      "Du siehst für jede Aussage, ob sie wahr, falsch oder nur teilweise richtig ist.",
+  },
+];
 
 export const AppExplanation = () => {
+  const [api, setApi] = useState<CarouselApi>();
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    if (!api) return;
+    const onSelect = () => setCurrent(api.selectedScrollSnap());
+    api.on("select", onSelect);
+    onSelect();
+    return () => {
+      api.off("select", onSelect);
+    };
+  }, [api]);
+
+  const scrollTo = useCallback(
+    (index: number) => api?.scrollTo(index),
+    [api],
+  );
+
   return (
-    <div className="w-full max-w-xl bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 my-8">
-      <div className="flex items-center mb-4">
-        <InfoIcon className="h-6 w-6 text-blue-500 mr-2" />
-        <h2 className="text-xl font-semibold">So funktioniert FaktenChecken</h2>
-      </div>
+    <div className="w-full max-w-lg mt-10 fade-in-up-d3">
+      <h2 className="font-display text-lg font-bold mb-4 text-center">
+        So funktioniert es
+      </h2>
 
-      <div className="space-y-4">
-        <p className="text-gray-700 dark:text-gray-300">
-          Mit FaktenChecken kannst du prüfen, ob Informationen in TikTok-Videos
-          stimmen oder bestimmte Aussagen faktenbasiert sind. Du hast zwei
-          Möglichkeiten:
-        </p>
+      <Carousel
+        setApi={setApi}
+        opts={{ align: "start", loop: true }}
+        className="w-full"
+      >
+        <CarouselContent className="-ml-3">
+          {STEPS.map((step) => (
+            <CarouselItem key={step.number} className="pl-3 basis-full">
+              <div className="border border-border rounded-lg bg-card p-5 md:p-6 min-h-[140px] flex items-start gap-4">
+                <span className="font-display text-3xl font-bold text-muted-foreground/30 leading-none select-none pt-0.5">
+                  {step.number}
+                </span>
+                <div>
+                  <h3 className="font-display font-semibold text-base mb-1.5">
+                    {step.title}
+                  </h3>
+                  <p className="font-body text-sm text-muted-foreground leading-relaxed">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
+            </CarouselItem>
+          ))}
+        </CarouselContent>
 
-        <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-4">
-          <h3 className="font-medium text-blue-700 dark:text-blue-300">
-            Option 1: TikTok-Video prüfen
-          </h3>
-          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-            Gib einfach einen TikTok-Link ein, um den Inhalt zu überprüfen.
-          </p>
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <button
+            onClick={() => api?.scrollPrev()}
+            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Vorheriger Schritt"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+
+          <div className="flex items-center gap-1.5">
+            {STEPS.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => scrollTo(index)}
+                aria-label={`Schritt ${index + 1}`}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-200",
+                  current === index
+                    ? "w-5 bg-foreground"
+                    : "w-1.5 bg-border hover:bg-muted-foreground",
+                )}
+              />
+            ))}
+          </div>
+
+          <button
+            onClick={() => api?.scrollNext()}
+            className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Nächster Schritt"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
         </div>
-
-        <div className="bg-purple-50 dark:bg-purple-900/30 p-4 rounded-lg mb-4">
-          <h3 className="font-medium text-purple-700 dark:text-purple-300">
-            Option 2: Aussage prüfen
-          </h3>
-          <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
-            Gib eine beliebige Aussage ein, die du überprüfen möchtest, auch
-            ohne Video.
-          </p>
-        </div>
-
-        <div className="bg-green-50 dark:bg-green-900/30 p-4 rounded-lg mb-4">
-          <div className="flex items-center">
-            <Globe className="h-5 w-5 text-green-700 dark:text-green-300 mr-2" />
-            <h3 className="font-medium text-green-700 dark:text-green-300">
-              Mit tagesaktuellen Informationen
-            </h3>
-          </div>
-          <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-            Unsere KI durchsucht das Internet nach den neuesten Fakten, um auch
-            tagesaktuelle Behauptungen richtig einordnen zu können.
-          </p>
-        </div>
-
-        <div className="space-y-4 mt-4">
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              1
-            </div>
-            <div>
-              <h3 className="font-medium">Video oder Aussage auswählen</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Entscheide, ob du ein TikTok-Video oder eine eigene Aussage
-                überprüfen möchtest
-              </p>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              2
-            </div>
-            <div>
-              <h3 className="font-medium">Eingabe vornehmen</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Bei TikToks: Tippe auf{" "}
-                <Share2 className="h-4 w-4 inline mx-1" /> "Teilen" und dann auf{" "}
-                <Copy className="h-4 w-4 inline mx-1" /> "Link kopieren"
-                <br />
-                Bei Aussagen: Gib einfach den Text in das untere Feld ein
-              </p>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              3
-            </div>
-            <div>
-              <h3 className="font-medium">Überprüfen starten</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Klicke auf "Überprüfen" und warte auf die Analyse
-              </p>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              4
-            </div>
-            <div>
-              <h3 className="font-medium">KI recherchiert im Web</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Die KI sucht im Internet nach den aktuellsten Informationen zum
-                Thema
-              </p>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              5
-            </div>
-            <div>
-              <h3 className="font-medium">Ergebnisse erhalten</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Die KI analysiert alle Informationen und zeigt dir, was wahr und
-                was falsch ist
-              </p>
-            </div>
-          </div>
-
-          <div className="flex">
-            <div className="bg-blue-500 text-white rounded-full h-6 w-6 flex items-center justify-center mr-3 flex-shrink-0">
-              6
-            </div>
-            <div>
-              <h3 className="font-medium">Fragen stellen</h3>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Du kannst Nachfragen stellen, um mehr über bestimmte Fakten zu
-                erfahren
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
-          <p className="text-sm text-blue-700 dark:text-blue-300">
-            <span className="font-medium">Tipp:</span> Du kannst sowohl einen
-            TikTok-Link als auch eine Aussage gleichzeitig eingeben, um einen
-            direkten Faktencheck zur Aussage im Kontext des Videos zu erhalten.
-          </p>
-        </div>
-      </div>
+      </Carousel>
     </div>
   );
 };

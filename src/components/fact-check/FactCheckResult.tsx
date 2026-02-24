@@ -1,5 +1,4 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
@@ -13,6 +12,7 @@ import {
   getOverallVerdict,
   parseFactCheckContent,
 } from "./utils";
+import { VerdictBadge } from "./VerdictBadge";
 
 interface FactCheckResultProps {
   transcript: string;
@@ -20,6 +20,13 @@ interface FactCheckResultProps {
   onAskFollowup: (question: string) => Promise<void>;
   isLoading: boolean;
 }
+
+const VERDICT_LABEL: Record<string, string> = {
+  true: "WAHR",
+  false: "FALSCH",
+  partial: "TEILS-TEILS",
+  unknown: "UNBEKANNT",
+};
 
 export const FactCheckResult = ({
   transcript,
@@ -50,23 +57,20 @@ export const FactCheckResult = ({
     if (!hasFollowup) return null;
 
     const parts = text.split("--- Folgende Frage ---");
-    const processedQuestions = new Set();
+    const processedQuestions = new Set<string>();
 
     const followups = parts
       .slice(1)
       .map((followupSection, sectionIdx) => {
         const sectionLines = followupSection.trim().split("\n");
-        let question = sectionLines[0].trim();
-
-        let answer = "";
-        if (sectionLines.length > 1) {
-          answer = sectionLines.slice(1).join("\n").trim();
-        }
+        const question = sectionLines[0].trim();
+        const answer =
+          sectionLines.length > 1
+            ? sectionLines.slice(1).join("\n").trim()
+            : "";
 
         const questionKey = question.toLowerCase().trim();
-        if (processedQuestions.has(questionKey) || !answer) {
-          return null;
-        }
+        if (processedQuestions.has(questionKey) || !answer) return null;
         processedQuestions.add(questionKey);
 
         return (
@@ -80,17 +84,21 @@ export const FactCheckResult = ({
       })
       .filter(Boolean);
 
-    return followups.length > 0 ? (
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-4">Zusätzliche Fragen</h3>
-        <div className="space-y-4">{followups}</div>
+    if (followups.length === 0) return null;
+
+    return (
+      <div>
+        <h3 className="font-display text-base font-bold mb-3">
+          Zusätzliche Fragen
+        </h3>
+        <div className="space-y-3">{followups}</div>
       </div>
-    ) : null;
+    );
   };
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-3 mt-6">
         <Skeleton className="h-8 w-3/4" />
         <Skeleton className="h-32 w-full" />
         <Skeleton className="h-6 w-1/2" />
@@ -109,40 +117,36 @@ export const FactCheckResult = ({
     );
   }
 
-  const { verdict, status } = getOverallVerdict(factCheck, hasFollowup);
+  const { status } = getOverallVerdict(factCheck, hasFollowup);
   const parsedContent = parseFactCheckContent(factCheck, hasFollowup);
   const claims = parsedContent.filter(
     (item): item is StructuredClaim => item.type === "claim",
   );
 
-  // Get verdict text based on status
-  const verdictText = {
-    true: "WAHR",
-    false: "FALSCH",
-    partial: "TEILS-TEILS",
-    unknown: "UNBEKANNT",
-  }[status];
-
-  // Build a simpler summary
   const summaryText =
     extractSimpleExplanation(factCheck) ||
     "Bitte prüfen Sie die einzelnen Behauptungen für Details.";
 
   return (
-    <div className="mt-4 space-y-6">
-      {/* Simple Summary Card */}
-      <Card className="p-4 border">
-        <div className="prose prose-sm max-w-none">
-          <ReactMarkdown>{`# Zusammenfassung: ${verdictText}
-
-${summaryText}`}</ReactMarkdown>
+    <div className="mt-6 space-y-6 fade-in-up">
+      {/* Summary */}
+      <div className="border border-border rounded-lg bg-card p-4 md:p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-display text-lg font-bold">Zusammenfassung</h2>
+          <VerdictBadge
+            verdict={VERDICT_LABEL[status] ?? "UNBEKANNT"}
+            status={status}
+          />
         </div>
-      </Card>
+        <div className="prose prose-sm max-w-none font-body text-muted-foreground [&_p]:leading-relaxed [&_p]:text-sm">
+          <ReactMarkdown>{summaryText}</ReactMarkdown>
+        </div>
+      </div>
 
-      {/* Claims Section */}
+      {/* Claims */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">Detailbewertung</h2>
-        <div className="space-y-4">
+        <h2 className="font-display text-lg font-bold mb-3">Detailbewertung</h2>
+        <div className="space-y-3">
           {claims.map((claim, index) => (
             <ClaimCard key={index} claim={claim} index={index} />
           ))}
@@ -151,22 +155,18 @@ ${summaryText}`}</ReactMarkdown>
 
       {formatFollowupQuestions(factCheck)}
 
-      <div className="pt-4">
-        <TranscriptToggle
-          isOpen={isTranscriptOpen}
-          onToggle={() => setIsTranscriptOpen(!isTranscriptOpen)}
-          transcript={transcript}
-        />
-      </div>
+      <TranscriptToggle
+        isOpen={isTranscriptOpen}
+        onToggle={() => setIsTranscriptOpen(!isTranscriptOpen)}
+        transcript={transcript}
+      />
 
-      <div className="pt-4">
-        <FollowupForm
-          onSubmit={handleFollowupSubmit}
-          question={followupQuestion}
-          onChange={setFollowupQuestion}
-          isSubmitting={isSubmitting || isLoading}
-        />
-      </div>
+      <FollowupForm
+        onSubmit={handleFollowupSubmit}
+        question={followupQuestion}
+        onChange={setFollowupQuestion}
+        isSubmitting={isSubmitting || isLoading}
+      />
     </div>
   );
 };

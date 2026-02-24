@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Info, Loader } from "lucide-react";
+import { Loader } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +18,6 @@ export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
     const standardTiktokRegex =
       /^(https?:\/\/)?(www\.|m\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
     const shortTiktokRegex = /^(https?:\/\/)?vm\.tiktok\.com\/\w+/i;
-
     return standardTiktokRegex.test(input) || shortTiktokRegex.test(input);
   };
 
@@ -51,65 +50,72 @@ export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-xl space-y-3 md:space-y-5"
+      className="w-full max-w-lg mx-auto fade-in-up-d1"
     >
-      <div className="flex flex-col gap-1 md:gap-2">
-        <label htmlFor="tiktok-url" className="text-xs md:text-sm font-medium">
-          TikTok URL eingeben:
-        </label>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Input
-            id="tiktok-url"
-            placeholder="https://www.tiktok.com/"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 text-xs md:text-sm h-9 md:h-10"
-            disabled={isLoading}
-            aria-label="TikTok URL"
-          />
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="h-9 md:h-10 text-xs md:text-sm px-3 md:px-4"
-          >
-            {isLoading ? (
-              <>
-                <Loader className="mr-1 md:mr-2 h-3 md:h-4 w-3 md:w-4 animate-spin" />
-                <span>Lädt...</span>
-              </>
-            ) : (
-              "Überprüfen"
-            )}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-1 md:gap-2">
-        <div className="flex items-center gap-1">
+      <div className="bg-card border border-border rounded-lg p-5 md:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col gap-1.5">
           <label
-            htmlFor="statement"
-            className="text-xs md:text-sm font-medium flex items-center gap-1"
+            htmlFor="tiktok-url"
+            className="text-sm font-body font-medium text-foreground"
           >
-            Aussage zum Überprüfen:
+            TikTok Link
           </label>
-          <div className="text-xs text-gray-500 flex items-center gap-1">
-            <Info className="h-3 w-3" />
-            <span>
-              Du kannst entweder eine TikTok URL oder eine Aussage eingeben
-              (oder beides)
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              id="tiktok-url"
+              placeholder="https://www.tiktok.com/..."
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              className="flex-1 font-body text-sm h-11 md:h-12 border-border focus-visible:ring-foreground/20 placeholder:text-muted-foreground/50"
+              disabled={isLoading}
+              aria-label="TikTok URL"
+            />
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="h-11 md:h-12 px-6 font-body font-semibold text-sm"
+            >
+              {isLoading ? (
+                <>
+                  <Loader className="mr-2 h-4 w-4 animate-spin" />
+                  Lädt...
+                </>
+              ) : (
+                "Überprüfen"
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center">
+            <span className="bg-card px-3 text-xs text-muted-foreground font-body">
+              oder
             </span>
           </div>
         </div>
-        <Textarea
-          id="statement"
-          placeholder="Gib eine Aussage ein, die du überprüfen möchtest..."
-          value={statement}
-          onChange={(e) => setStatement(e.target.value)}
-          className="resize-none text-xs md:text-sm min-h-[80px]"
-          disabled={isLoading}
-          rows={3}
-          aria-label="Aussage zum Überprüfen"
-        />
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="statement"
+            className="text-sm font-body font-medium text-foreground"
+          >
+            Aussage prüfen
+          </label>
+          <Textarea
+            id="statement"
+            placeholder="Schreibe hier eine Aussage, die du checken willst..."
+            value={statement}
+            onChange={(e) => setStatement(e.target.value)}
+            className="resize-none font-body text-sm min-h-[80px] border-border focus-visible:ring-foreground/20 placeholder:text-muted-foreground/50"
+            disabled={isLoading}
+            rows={3}
+            aria-label="Aussage zum Überprüfen"
+          />
+        </div>
       </div>
     </form>
   );

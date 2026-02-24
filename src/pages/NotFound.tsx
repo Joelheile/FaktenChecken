@@ -6,39 +6,24 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname,
-    );
-
-    posthog.capture("404_error", {
-      path: location.pathname,
-    });
+    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
+    posthog.capture("404_error", { path: location.pathname });
   }, [location.pathname]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center p-6 max-w-md">
-          <h1 className="text-3xl md:text-4xl font-bold mb-3 md:mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
-            404
-          </h1>
-          <p className="text-lg md:text-xl text-gray-600 mb-4 md:mb-6">
-            Seite nicht gefunden
-          </p>
-          <p className="text-sm md:text-base text-gray-500 mb-6 md:mb-8">
-            Die von dir gesuchte Seite existiert leider nicht.
-          </p>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-            onClick={() =>
-              posthog.capture("back_to_home_click", { source: "404_page" })
-            }
-          >
-            Zurück zur Startseite
-          </Link>
-        </div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="text-center px-5">
+        <h1 className="font-display text-6xl font-bold text-primary mb-3">404</h1>
+        <p className="font-body text-base text-muted-foreground mb-6">
+          Die von dir gesuchte Seite existiert leider nicht.
+        </p>
+        <Link
+          to="/"
+          className="inline-flex items-center px-5 py-2.5 font-body font-semibold text-sm bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
+          onClick={() => posthog.capture("back_to_home_click", { source: "404_page" })}
+        >
+          Zurück zur Startseite
+        </Link>
       </div>
     </div>
   );
