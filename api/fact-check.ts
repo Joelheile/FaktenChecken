@@ -124,7 +124,6 @@ export default async function handler(
         model: "gpt-5-mini-2025-08-07",
         messages,
         temperature: 0.1,
-        max_completion_tokens: 2000,
       }),
     });
 
