@@ -90,8 +90,12 @@ function buildUserPrompt(transcript: string, statement?: string): string {
   const hasTranscript = transcript && transcript.trim().length >= 5;
   const hasStatement = statement && statement.trim().length >= 3;
 
+  const translateNote = `WICHTIG: Das Transkript kann in einer beliebigen Sprache sein. Falls es NICHT auf Deutsch ist, übersetze es zuerst ins Deutsche, bevor du mit der Analyse beginnst. Zeige die deutsche Übersetzung am Anfang deiner Antwort unter der Überschrift "Übersetzung des Transkripts:" und arbeite dann mit dem deutschen Text weiter.`;
+
   if (hasTranscript && hasStatement) {
     return `Recherchiere und analysiere das folgende TikTok-Transkript. Finde ALLE überprüfbaren Behauptungen, gleiche sie mit offiziellen Quellen ab und ordne sie ein. Achte besonders auf Manipulation, Populismus, fehlenden Kontext und emotionale Tricks.
+
+${translateNote}
 
 Transkript:
 """
@@ -108,6 +112,8 @@ Prüfe zuerst die spezifische Aussage, dann weitere Behauptungen aus dem Transkr
 
   if (hasTranscript) {
     return `Recherchiere und analysiere das folgende TikTok-Transkript. Finde ALLE überprüfbaren Behauptungen, gleiche sie mit offiziellen Quellen ab und ordne sie ein. Achte besonders auf Manipulation, Populismus, fehlenden Kontext und emotionale Tricks.
+
+${translateNote}
 
 Transkript:
 """
