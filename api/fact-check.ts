@@ -121,7 +121,7 @@ export default async function handler(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4.1-mini",
+        model: "gpt-5-mini-2025-08-07",
         messages,
         temperature: 0.1,
         max_tokens: 2000,
