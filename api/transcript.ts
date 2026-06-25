@@ -54,6 +54,25 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
   return null;
 }
 
+/**
+ * Resolve the numeric TikTok video id via the official oEmbed endpoint. This
+ * also works for short (vm./vt.) links, which carry no id in the URL itself.
+ * Best-effort: a failure just means no embed is shown, never a broken check.
+ */
+async function resolveVideoId(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+    );
+    if (!res.ok) return null;
+    const data = (await res.json()) as { embed_product_id?: unknown };
+    const id = data.embed_product_id;
+    return typeof id === "string" && /^\d+$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 function isTikTokUrl(url: string): boolean {
   try {
     const { protocol, hostname } = new URL(url);
@@ -102,6 +121,9 @@ export default async function handler(
   }
 
   try {
+    // Resolve the embeddable video id concurrently with the (slow) actor run.
+    const videoIdPromise = resolveVideoId(url);
+
     // Single synchronous call: run the actor and get its dataset items back.
     // Apify blocks until the run finishes, so no manual polling loop is needed.
     const response = await fetch(
@@ -131,10 +153,28 @@ export default async function handler(
     const transcript = extractTranscript(items[0]);
 
     if (!transcript) {
-      throw new Error("No transcript found in response");
+      if (checkMeta) {
+        try {
+          await persistCheckError(
+            req,
+            checkMeta,
+            "no transcript",
+            "",
+            "transcript",
+          );
+        } catch (dbError) {
+          console.error("Failed to persist transcript error:", dbError);
+        }
+      }
+      res.status(422).json({
+        error: "no_transcript",
+        message:
+          "Dieses Video hat keinen Text zum Prüfen. Es wurden keine Untertitel oder gesprochene Sprache gefunden. Probiere ein Video, in dem jemand spricht.",
+      });
+      return;
     }
 
-    res.status(200).json({ transcript });
+    res.status(200).json({ transcript, videoId: await videoIdPromise });
   } catch (error) {
     console.error("Error processing request:", error);
     const message = error instanceof Error ? error.message : "Unknown error";
@@ -149,6 +189,10 @@ export default async function handler(
       }
     }
 
-    res.status(500).json({ error: "Failed to fetch transcript" });
+    res.status(500).json({
+      error: "transcript_failed",
+      message:
+        "Das Transkript konnte gerade nicht geladen werden. Bitte versuche es in einem Moment erneut.",
+    });
   }
 }

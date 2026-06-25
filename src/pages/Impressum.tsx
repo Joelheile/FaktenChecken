@@ -33,8 +33,8 @@ const Impressum = () => {
               Angaben gemäß § 5 TMG
             </h2>
             <p>Joel Heil Escobar</p>
-            <p>Köpenicker Straße 43</p>
-            <p>10179 Berlin</p>
+            <p>Dörnbergweg 2</p>
+            <p>34587 Felsberg</p>
           </section>
           <section>
             <h2 className="font-display text-base font-bold text-foreground mb-1">

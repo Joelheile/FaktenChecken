@@ -14,7 +14,7 @@ const MODEL = "gpt-5-mini";
 
 // Bump when SYSTEM_PROMPT or the schema changes, so longitudinal verdict
 // analysis can separate prompt versions instead of confounding them.
-const PROMPT_VERSION = "fc-2026-06-25";
+const PROMPT_VERSION = "fc-2026-06-25b";
 
 // Tunable cost/quality knobs. "low" search context roughly halves the
 // web-search tokens (the dominant cost) at little quality loss for focused,
@@ -52,6 +52,7 @@ Nutze die Websuche für jede ausgewählte Behauptung. Stelle pro Behauptung mög
 Bevorzuge verlässliche Quellen: Statistisches Bundesamt, Ministerien, Forschungsinstitute, Faktenchecker (Correctiv, dpa-Faktencheck), Nachrichtenagenturen (Reuters, dpa, AFP), öffentlich-rechtliche Sender.
 Nenne nur Quellen, die du wirklich gefunden und gelesen hast. Erfinde NIEMALS Zahlen, Studien, Zitate oder Links.
 Die Beweislast liegt beim Video. Eine Behauptung ist nicht wahr, nur weil sie selbstbewusst klingt oder eine Quelle nennt. Prüfe, ob die genannte Quelle wirklich existiert und das Gesagte belegt.
+Sei technisch kritisch: prüfe die genaue Definition, die Bezugsgröße, den Zeitraum und die Vergleichsbasis jeder Zahl. Hinterfrage, ob eine Korrelation als Ursache verkauft wird, ob Brutto mit Netto oder absolute Zahlen mit Quoten vermischt werden, und ob ein Einzelfall als Regel dargestellt wird. Eine Zahl, die "ungefähr stimmt", aber falsch eingeordnet ist, ist nicht "wahr".
 Wenn du keinen verlässlichen Beleg findest, ist das Urteil "nicht_pruefbar". Fehlender Beleg bedeutet NICHT automatisch "falsch".
 </recherche>
 
@@ -95,12 +96,12 @@ const REPORT_SCHEMA = {
     fazit: {
       type: "string",
       description:
-        "Ein bis drei kurze Sätze für ein Kind: was stimmt, was nicht, was fehlt.",
+        "Das Gesamturteil in EINEM kurzen, kindgerechten Satz (höchstens zwei): was stimmt und was nicht. So knapp wie möglich.",
     },
     vorsicht: {
       type: "string",
       description:
-        "Welche Manipulationstechnik im Video steckt. Falls keine: 'Keine auffällige Manipulation erkennbar.'",
+        "Die wichtigste Manipulationstechnik im Video in EINEM kurzen Satz. Falls keine: 'Keine auffällige Manipulation erkennbar.'",
     },
     behauptungen: {
       type: "array",

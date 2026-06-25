@@ -1,9 +1,15 @@
 import { CheckMeta } from "./openai";
 
+export interface TranscriptResult {
+  transcript: string;
+  /** Numeric TikTok id for embedding, null if it could not be resolved. */
+  videoId: string | null;
+}
+
 export async function fetchTikTokTranscript(
   tiktokUrl: string,
   meta?: CheckMeta,
-): Promise<string> {
+): Promise<TranscriptResult> {
   try {
     console.log(`Fetching transcript for TikTok video: ${tiktokUrl}`);
 
@@ -24,15 +30,18 @@ export async function fetchTikTokTranscript(
       throw new Error("Invalid response from transcript API");
     }
 
-    return data.transcript;
+    return {
+      transcript: data.transcript,
+      videoId: typeof data.videoId === "string" ? data.videoId : null,
+    };
   } catch (error) {
     console.error("Error in fetchTikTokTranscript:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "Unbekannter Fehler beim Abrufen des Transkripts.";
-    throw new Error(
-      `Fehler bei der TikTok-Transkript-Anfrage: ${errorMessage}`,
-    );
+    const message = error instanceof Error ? error.message : "";
+    if (/failed to fetch|networkerror|load failed/i.test(message)) {
+      throw new Error(
+        "Server nicht erreichbar. Bitte versuche es in einem Moment erneut.",
+      );
+    }
+    throw new Error(message || "Das Transkript konnte nicht geladen werden.");
   }
 }

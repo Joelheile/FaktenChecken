@@ -17,6 +17,8 @@ export interface FactCheckResponse {
   transcript: string;
   /** The structured fact-checking report */
   report: FactCheckReport;
+  /** Numeric TikTok id for embedding, null for statement-only checks */
+  videoId: string | null;
 }
 
 /**
@@ -80,10 +82,13 @@ export async function transcribeAndFactCheck(
 
   try {
     let transcript = "";
+    let videoId: string | null = null;
 
     if (tiktokUrl) {
       onProgress?.({ stage: "transcript" });
-      transcript = await fetchTikTokTranscript(tiktokUrl, meta);
+      const result = await fetchTikTokTranscript(tiktokUrl, meta);
+      transcript = result.transcript;
+      videoId = result.videoId;
 
       if (!transcript || transcript.trim().length < 5) {
         console.warn("Retrieved empty or very short transcript");
@@ -93,37 +98,19 @@ export async function transcribeAndFactCheck(
     onProgress?.({ stage: "analyzing" });
     const report = await performFactCheck(transcript, statement, meta);
 
-    return { transcript, report };
+    return { transcript, report, videoId };
   } catch (error) {
     if (error instanceof Error) {
-      const errorMessage = error.message;
-
-      if (
-        errorMessage.includes("TikTok") ||
-        errorMessage.includes("transcription")
-      ) {
-        throw new ApiError(
-          `Failed to transcribe TikTok video: ${errorMessage}`,
-          ApiErrorType.TRANSCRIPTION_ERROR,
-        );
-      } else if (
-        errorMessage.includes("API key") ||
-        errorMessage.includes("authentication")
-      ) {
-        throw new ApiError(
-          `Authentication error: ${errorMessage}`,
-          ApiErrorType.AUTH_ERROR,
-        );
-      }
-
-      throw new ApiError(
-        `Error during analysis: ${errorMessage}`,
-        ApiErrorType.NETWORK_ERROR,
-      );
+      const message = error.message;
+      const type = /transkript|untertitel|video|erreichbar/i.test(message)
+        ? ApiErrorType.TRANSCRIPTION_ERROR
+        : ApiErrorType.NETWORK_ERROR;
+      // Surface the (already German, user-facing) message as-is.
+      throw new ApiError(message, type);
     }
 
     throw new ApiError(
-      "An unknown error occurred during analysis",
+      "Bei der Analyse ist ein Fehler aufgetreten.",
       ApiErrorType.NETWORK_ERROR,
     );
   }

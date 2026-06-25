@@ -1,5 +1,4 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { posthog } from "@/lib/posthog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -13,7 +12,6 @@ import {
 import Impressum from "./pages/Impressum";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import PreviewFC from "./pages/PreviewFC";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -46,7 +44,6 @@ const AppRoutes = () => (
     <RouterRoutes>
       <Route path="/" element={<Index />} />
       <Route path="/impressum" element={<Impressum />} />
-      <Route path="/preview-fc" element={<PreviewFC />} />
       <Route path="*" element={<NotFound />} />
     </RouterRoutes>
   </>
@@ -55,8 +52,7 @@ const AppRoutes = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      <Sonner position="bottom-center" />
       <BrowserRouter>
         <AppRoutes />
       </BrowserRouter>

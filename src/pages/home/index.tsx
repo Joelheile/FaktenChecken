@@ -1,48 +1,32 @@
-import { FactCheckResult, Followup } from "@/components/fact-check";
-import {
-  AppExplanation,
-  ErrorAlert,
-  Footer,
-  Header,
-  ProgressIndicator,
-} from "@/components/home";
+import { FactCheckResult } from "@/components/fact-check";
+import { Footer, Header, ProgressIndicator } from "@/components/home";
 import { TikTokInput } from "@/components/tiktok-input";
 import {
   trackFactCheckCompleted,
   trackFactCheckError,
   trackFactCheckSubmitted,
-  trackFollowupAnswered,
-  trackFollowupAsked,
-  trackFollowupError,
   trackImpressumClicked,
 } from "@/lib/analytics";
-import {
-  askFollowupQuestion,
-  FactCheckResponse,
-  transcribeAndFactCheck,
-} from "@/services/api";
+import { FactCheckResponse, transcribeAndFactCheck } from "@/services/api";
+import { ArrowLeft } from "lucide-react";
 import { useState } from "react";
-import { toast, Toaster } from "sonner";
+import { toast } from "sonner";
 
 export const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [factCheckData, setFactCheckData] = useState<FactCheckResponse | null>(
     null,
   );
-  const [followups, setFollowups] = useState<Followup[]>([]);
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (
     url: string,
     statement?: string,
     source: "manual" | "example" = "manual",
   ) => {
-    setError(null);
     setIsLoading(true);
     setProgress(0);
-    setFollowups([]);
 
     const hasUrl = !!url;
     setProgressMessage(
@@ -102,33 +86,9 @@ export const HomePage = () => {
             : "";
       }
 
-      setError(errorMessage);
-      toast.error("Fehler beim Faktencheck: " + errorMessage);
+      toast.error(errorMessage);
 
       trackFactCheckError(errorMessage, errorType);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFollowupQuestion = async (question: string) => {
-    setError(null);
-    setIsLoading(true);
-
-    trackFollowupAsked(question);
-
-    try {
-      const answer = await askFollowupQuestion(question);
-      setFollowups((prev) => [...prev, { question: question.trim(), answer }]);
-      trackFollowupAnswered(question, answer);
-    } catch (error) {
-      console.error("Error asking followup:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unbekannter Fehler";
-      setError(errorMessage);
-      toast.error("Fehler bei der Beantwortung der Frage: " + errorMessage);
-
-      trackFollowupError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -138,31 +98,39 @@ export const HomePage = () => {
     trackImpressumClicked();
   };
 
-  return (
-    <div className="flex min-h-screen flex-col bg-background bg-dots">
-      <Toaster position="top-center" />
+  const handleReset = () => {
+    setFactCheckData(null);
+    setProgress(0);
+    window.scrollTo({ top: 0 });
+  };
 
+  return (
+    <div className="flex min-h-dvh flex-col bg-background bg-dots [padding-left:env(safe-area-inset-left)] [padding-right:env(safe-area-inset-right)]">
       <div className="mx-auto w-full max-w-2xl flex-1 px-5 py-10 md:px-8 md:py-16">
-        <Header />
+        {!factCheckData && <Header compact={isLoading} />}
 
         <main className="mt-10 flex flex-col">
-          <TikTokInput onSubmit={handleSubmit} isLoading={isLoading} />
-
-          {error && <ErrorAlert message={error} />}
-
           {progress > 0 && (
             <ProgressIndicator progress={progress} message={progressMessage} />
           )}
 
-          {!factCheckData && !isLoading && <AppExplanation />}
+          {!factCheckData && (
+            <TikTokInput onSubmit={handleSubmit} isLoading={isLoading} />
+          )}
 
           {factCheckData && (
-            <div className="mt-8 w-full">
+            <div className="w-full">
+              <button
+                type="button"
+                onClick={handleReset}
+                className="mb-6 inline-flex items-center gap-1.5 font-body text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Neue Prüfung
+              </button>
               <FactCheckResult
-                transcript={factCheckData.transcript}
                 report={factCheckData.report}
-                followups={followups}
-                onAskFollowup={handleFollowupQuestion}
+                videoId={factCheckData.videoId}
                 isLoading={isLoading}
               />
             </div>

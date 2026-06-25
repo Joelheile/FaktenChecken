@@ -1,23 +1,27 @@
 import { ShieldCheck } from "lucide-react";
 
-export const Header = () => (
+export const Header = ({ compact = false }: { compact?: boolean }) => (
   <header className="fade-in-up flex flex-col items-center text-center">
-    <div className="mb-7 rounded-lg bg-foreground px-3 py-1.5 shadow-soft">
-      <img
-        src="/schule.png"
-        alt="Ernst-Schering-Schule"
-        className="h-9 md:h-10"
-      />
-    </div>
+    {!compact && (
+      <div className="mb-7 rounded-lg bg-foreground px-3 py-1.5 shadow-soft">
+        <img
+          src="/schule.png"
+          alt="Ernst-Schering-Schule"
+          className="h-9 md:h-10"
+        />
+      </div>
+    )}
 
     <h1 className="font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
       TikTok <span className="text-primary">FaktenCheck</span>
     </h1>
 
-    <p className="mt-4 max-w-md font-body text-base leading-relaxed text-muted-foreground">
-      Stimmt das wirklich, was du auf TikTok gesehen hast? Füg den Link ein, wir
-      prüfen die Fakten.
-    </p>
+    {!compact && (
+      <p className="mt-4 max-w-md font-body text-base leading-relaxed text-muted-foreground">
+        Stimmt das wirklich, was du auf TikTok gesehen hast? Füg den Link ein,
+        wir prüfen die Fakten.
+      </p>
+    )}
 
     <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
       <span className="trust-chip">

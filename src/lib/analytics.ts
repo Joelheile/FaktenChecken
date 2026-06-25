@@ -146,10 +146,6 @@ export const trackSourceClicked = (params: {
   });
 };
 
-export const trackTranscriptOpened = (): void => {
-  posthog.capture("transcript_opened");
-};
-
 export const trackFollowupAsked = (question: string): void => {
   posthog.capture("followup_question_asked", {
     question_text: truncate(question.trim()),

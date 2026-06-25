@@ -1,4 +1,3 @@
-export * from "./AppExplanation";
 export * from "./ErrorAlert";
 export * from "./Footer";
 export * from "./Header";
