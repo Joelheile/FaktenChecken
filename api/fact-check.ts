@@ -4,7 +4,7 @@ import {
   checkRateLimit,
   persistCheck,
   persistCheckError,
-} from "./_db";
+} from "./_db.js";
 
 export const config = {
   maxDuration: 120,

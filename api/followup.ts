@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { checkRateLimit, persistQuestion } from "./_db";
+import { checkRateLimit, persistQuestion } from "./_db.js";
 
 export const config = {
   maxDuration: 30,
