@@ -83,7 +83,7 @@ export const FactCheckResult = ({
         </p>
 
         {showCaution && (
-          <div className="mt-4 flex items-start gap-2.5 rounded-lg border border-verdict-partial/40 bg-verdict-partial/[0.06] p-3">
+          <div className="mt-4 flex items-start gap-2.5 border-l-2 border-verdict-partial/50 pl-3">
             <ShieldAlert
               className="mt-0.5 h-4 w-4 shrink-0 text-verdict-partial"
               strokeWidth={2.5}

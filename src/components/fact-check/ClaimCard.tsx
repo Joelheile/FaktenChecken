@@ -1,5 +1,5 @@
 import { trackSourceClicked } from "@/lib/analytics";
-import { AlertTriangle, ExternalLink } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { ClaimCardProps } from "./types";
 import { safeHttpUrl, verdictToStatus } from "./utils";
 import { VerdictBadge } from "./VerdictBadge";
@@ -60,16 +60,20 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
         {claim.quellen.length > 0 && (
           <div className="border-t border-border pt-3">
             <p className="eyebrow mb-2">Quellen</p>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {claim.quellen.map((source, i) => {
                 const href = safeHttpUrl(source.url);
+                const num = String(i + 1).padStart(2, "0");
                 if (!href) {
                   return (
                     <li
                       key={`${i}-${source.titel}`}
-                      className="rounded-md border border-border bg-muted/40 px-3 py-2 font-body text-sm text-muted-foreground [overflow-wrap:anywhere]"
+                      className="flex gap-2 font-body text-sm text-muted-foreground [overflow-wrap:anywhere]"
                     >
-                      {source.titel}
+                      <span className="font-mono text-[0.7rem] text-muted-foreground/70">
+                        {num}
+                      </span>
+                      <span className="min-w-0 flex-1">{source.titel}</span>
                     </li>
                   );
                 }
@@ -88,22 +92,21 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
                           claimIndex: index,
                         })
                       }
-                      className="group/src flex items-start gap-2.5 rounded-md border border-border bg-card px-3 py-2.5 transition-colors hover:border-primary/40 hover:bg-primary/5"
+                      className="group/src flex gap-2 font-body text-sm"
                     >
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded font-mono text-[0.65rem] text-muted-foreground">
-                        {String(i + 1).padStart(2, "0")}
+                      <span className="font-mono text-[0.7rem] text-muted-foreground/70">
+                        {num}
                       </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block font-body text-sm font-medium text-primary underline decoration-primary/30 underline-offset-2 group-hover/src:decoration-primary [overflow-wrap:anywhere]">
+                      <span className="min-w-0 flex-1 [overflow-wrap:anywhere]">
+                        <span className="text-primary underline decoration-primary/30 underline-offset-2 group-hover/src:decoration-primary">
                           {source.titel}
                         </span>
                         {host && (
-                          <span className="mt-0.5 block font-mono text-[0.7rem] text-muted-foreground">
+                          <span className="ml-1.5 font-mono text-[0.7rem] text-muted-foreground">
                             {host}
                           </span>
                         )}
                       </span>
-                      <ExternalLink className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground opacity-70 transition-opacity group-hover/src:opacity-100" />
                     </a>
                   </li>
                 );
