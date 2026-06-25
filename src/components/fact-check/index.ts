@@ -2,7 +2,6 @@ export * from "./ClaimCard";
 export * from "./FactCheckResult";
 export * from "./FollowupForm";
 export * from "./FollowupQuestion";
-export * from "./TextContentBlock";
 export * from "./TranscriptToggle";
 export * from "./types";
 export * from "./utils";

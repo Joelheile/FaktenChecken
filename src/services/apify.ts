@@ -1,5 +1,8 @@
+import { CheckMeta } from "./openai";
+
 export async function fetchTikTokTranscript(
   tiktokUrl: string,
+  meta?: CheckMeta,
 ): Promise<string> {
   try {
     console.log(`Fetching transcript for TikTok video: ${tiktokUrl}`);
@@ -7,14 +10,12 @@ export async function fetchTikTokTranscript(
     const response = await fetch("/api/transcript", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url: tiktokUrl }),
+      body: JSON.stringify({ url: tiktokUrl, meta }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.message || `API error: ${response.statusText}`,
-      );
+      throw new Error(errorData.message || `API error: ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -24,10 +25,12 @@ export async function fetchTikTokTranscript(
     }
 
     return data.transcript;
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in fetchTikTokTranscript:", error);
     const errorMessage =
-      error.message || "Unbekannter Fehler beim Abrufen des Transkripts.";
+      error instanceof Error
+        ? error.message
+        : "Unbekannter Fehler beim Abrufen des Transkripts.";
     throw new Error(
       `Fehler bei der TikTok-Transkript-Anfrage: ${errorMessage}`,
     );

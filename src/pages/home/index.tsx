@@ -1,105 +1,93 @@
-import { FactCheckResult } from "@/components/fact-check";
+import { FactCheckResult, Followup } from "@/components/fact-check";
 import {
   AppExplanation,
   ErrorAlert,
-  ExampleTip,
   Footer,
   Header,
   ProgressIndicator,
 } from "@/components/home";
 import { TikTokInput } from "@/components/tiktok-input";
-import { posthog } from "@/lib/posthog";
+import {
+  trackFactCheckCompleted,
+  trackFactCheckError,
+  trackFactCheckSubmitted,
+  trackFollowupAnswered,
+  trackFollowupAsked,
+  trackFollowupError,
+  trackImpressumClicked,
+} from "@/lib/analytics";
 import {
   askFollowupQuestion,
   FactCheckResponse,
   transcribeAndFactCheck,
 } from "@/services/api";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast, Toaster } from "sonner";
-
-const getProgressMessage = (
-  progress: number,
-  hasStatement: boolean,
-  hasUrl: boolean,
-): string => {
-  if (!hasUrl && hasStatement) {
-    if (progress < 30) return "Aussage wird aufbereitet...";
-    if (progress < 60) return "Internet wird nach aktuellen Fakten durchsucht...";
-    if (progress < 85) return "Fakten werden von KI ausgewertet...";
-    return "Ergebnisse werden zusammengestellt...";
-  }
-
-  if (progress < 30) return "TikTok Video wird geladen...";
-  if (progress < 50) return "Transkript wird aus TikTok Video erstellt...";
-  if (progress < 70) return "Internet wird nach aktuellen Fakten durchsucht...";
-  if (progress < 90)
-    return hasStatement
-      ? "Transkript und Aussage werden von KI ausgewertet..."
-      : "Transkript wird von KI ausgewertet...";
-  return "Ergebnisse werden zusammengestellt...";
-};
 
 export const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [factCheckData, setFactCheckData] = useState<FactCheckResponse | null>(
     null,
   );
+  const [followups, setFollowups] = useState<Followup[]>([]);
   const [progress, setProgress] = useState(0);
+  const [progressMessage, setProgressMessage] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [showExampleTip, setShowExampleTip] = useState(false);
-  const [hasStatement, setHasStatement] = useState(false);
-  const [hasUrl, setHasUrl] = useState(false);
 
-  useEffect(() => {
-    if (!factCheckData && !isLoading) {
-      const timer = setTimeout(() => setShowExampleTip(true), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [factCheckData, isLoading]);
-
-  const handleSubmit = async (url: string, statement?: string) => {
+  const handleSubmit = async (
+    url: string,
+    statement?: string,
+    source: "manual" | "example" = "manual",
+  ) => {
     setError(null);
     setIsLoading(true);
     setProgress(0);
-    setShowExampleTip(false);
-    setHasStatement(!!statement);
-    setHasUrl(!!url);
+    setFollowups([]);
 
-    posthog.capture("tiktok_url_submitted", {
-      url_length: url?.length || 0,
-      has_statement: !!statement,
-      has_url: !!url,
-      has_only_statement: !url && !!statement,
-    });
+    const hasUrl = !!url;
+    setProgressMessage(
+      hasUrl
+        ? "TikTok Video wird geladen..."
+        : "Faktencheck wird vorbereitet...",
+    );
 
-    const progressStep = !url && statement ? 5 : 2;
-    const progressInterval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(progressInterval);
-          return prev;
-        }
-        return prev + progressStep;
-      });
-    }, 800);
+    trackFactCheckSubmitted({ url, statement, source });
+    const startedAt = Date.now();
+
+    // The transcript fetch and the model run expose no sub-progress, so creep
+    // gently toward a moving cap while they run. The cap rises once the model
+    // starts analyzing; the bar jumps to 100 when the real result arrives.
+    let creepCap = hasUrl ? 28 : 8;
+    const creep = setInterval(() => {
+      setProgress((prev) => (prev < creepCap ? prev + 1 : prev));
+    }, 300);
 
     try {
-      const result = await transcribeAndFactCheck(url, statement);
-      clearInterval(progressInterval);
+      const result = await transcribeAndFactCheck(url, statement, (event) => {
+        switch (event.stage) {
+          case "transcript":
+            setProgressMessage("Transkript wird aus TikTok Video erstellt...");
+            break;
+          case "analyzing":
+            creepCap = hasUrl ? 90 : 85;
+            setProgressMessage("Internet wird nach Fakten durchsucht...");
+            break;
+        }
+      });
+      clearInterval(creep);
       setProgress(100);
       setFactCheckData(result);
       toast.success("Faktencheck erfolgreich abgeschlossen!");
 
-      posthog.capture("fact_check_completed", {
-        success: true,
-        transcript_length: result.transcript?.length || 0,
-        had_statement: !!statement,
-        had_url: !!url,
+      trackFactCheckCompleted({
+        report: result.report,
+        transcriptLength: result.transcript?.length ?? 0,
+        durationMs: Date.now() - startedAt,
       });
 
       setTimeout(() => setProgress(0), 1000);
     } catch (error) {
-      clearInterval(progressInterval);
+      clearInterval(creep);
       setProgress(0);
       console.error("Error during fact check:", error);
 
@@ -108,16 +96,16 @@ export const HomePage = () => {
 
       if (error instanceof Error) {
         errorMessage = error.message;
-        errorType = error.name === "ApiError" ? (error as Error & { type?: string }).type : "";
+        errorType =
+          error.name === "ApiError"
+            ? (error as Error & { type?: string }).type
+            : "";
       }
 
       setError(errorMessage);
       toast.error("Fehler beim Faktencheck: " + errorMessage);
 
-      posthog.capture("fact_check_error", {
-        error_message: errorMessage,
-        error_type: errorType,
-      });
+      trackFactCheckError(errorMessage, errorType);
     } finally {
       setIsLoading(false);
     }
@@ -127,36 +115,12 @@ export const HomePage = () => {
     setError(null);
     setIsLoading(true);
 
-    posthog.capture("followup_question_asked", {
-      question_length: question.length,
-    });
+    trackFollowupAsked(question);
 
     try {
-      const questionExists =
-        factCheckData &&
-        factCheckData.factCheck
-          .toLowerCase()
-          .includes(`--- folgende frage ---\n${question.toLowerCase().trim()}`);
-
-      if (!questionExists) {
-        const answer = await askFollowupQuestion(question);
-
-        if (factCheckData) {
-          setFactCheckData({
-            ...factCheckData,
-            factCheck:
-              factCheckData.factCheck +
-              "\n\n--- Folgende Frage ---\n" +
-              question.trim() +
-              "\n\n" +
-              answer.trim(),
-          });
-
-          posthog.capture("followup_question_answered", { success: true });
-        }
-      } else {
-        toast.info("Diese Frage wurde bereits beantwortet.");
-      }
+      const answer = await askFollowupQuestion(question);
+      setFollowups((prev) => [...prev, { question: question.trim(), answer }]);
+      trackFollowupAnswered(question, answer);
     } catch (error) {
       console.error("Error asking followup:", error);
       const errorMessage =
@@ -164,60 +128,40 @@ export const HomePage = () => {
       setError(errorMessage);
       toast.error("Fehler bei der Beantwortung der Frage: " + errorMessage);
 
-      posthog.capture("followup_question_error", {
-        error_message: errorMessage,
-      });
+      trackFollowupError(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleExampleClick = () => {
-    handleSubmit(
-      "https://www.tiktok.com/@derstandardat/video/7290526239980848417",
-      undefined,
-    );
-    posthog.capture("example_tiktok_clicked");
-  };
-
   const handleImpressumClick = () => {
-    posthog.capture("impressum_click", { source: "footer" });
+    trackImpressumClicked();
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background bg-dots">
       <Toaster position="top-center" />
 
-      <div className="flex-1 max-w-2xl w-full mx-auto px-5 md:px-8 py-10 md:py-16">
+      <div className="mx-auto w-full max-w-2xl flex-1 px-5 py-10 md:px-8 md:py-16">
         <Header />
 
-        <main className="mt-10 flex flex-col items-center">
+        <main className="mt-10 flex flex-col">
           <TikTokInput onSubmit={handleSubmit} isLoading={isLoading} />
 
-          {showExampleTip && !factCheckData && !isLoading && (
-            <ExampleTip onClick={handleExampleClick} />
-          )}
-
-          {error && (
-            <div className="w-full max-w-lg">
-              <ErrorAlert message={error} />
-            </div>
-          )}
+          {error && <ErrorAlert message={error} />}
 
           {progress > 0 && (
-            <ProgressIndicator
-              progress={progress}
-              message={getProgressMessage(progress, hasStatement, hasUrl)}
-            />
+            <ProgressIndicator progress={progress} message={progressMessage} />
           )}
 
           {!factCheckData && !isLoading && <AppExplanation />}
 
           {factCheckData && (
-            <div className="w-full max-w-lg mt-6">
+            <div className="mt-8 w-full">
               <FactCheckResult
                 transcript={factCheckData.transcript}
-                factCheck={factCheckData.factCheck}
+                report={factCheckData.report}
+                followups={followups}
                 onAskFollowup={handleFollowupQuestion}
                 isLoading={isLoading}
               />

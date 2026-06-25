@@ -7,17 +7,22 @@ export const ProgressIndicator = ({
   progress,
   message,
 }: ProgressIndicatorProps) => (
-  <div className="w-full max-w-lg mx-auto mt-4 fade-in">
-    <div className="border border-border rounded-lg bg-card p-4">
-      <div className="flex items-baseline justify-between mb-2">
-        <span className="font-body text-sm text-muted-foreground">{message}</span>
-        <span className="font-body text-xs font-medium text-foreground tabular-nums">
-          {progress}%
+  <div className="fade-in mt-4 w-full">
+    <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
+      <div className="mb-2.5 flex items-baseline justify-between gap-3">
+        <span className="font-mono text-xs leading-relaxed text-foreground">
+          <span className="mr-1 inline-block animate-pulse text-primary">
+            ▸
+          </span>
+          {message}
+        </span>
+        <span className="font-mono text-sm font-bold tabular-nums text-primary">
+          {String(progress).padStart(3, "0")}%
         </span>
       </div>
-      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+      <div className="h-2 overflow-hidden rounded-full border border-border bg-muted">
         <div
-          className="h-full bg-foreground rounded-full transition-all duration-500 ease-out"
+          className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
           style={{ width: `${progress}%` }}
         />
       </div>

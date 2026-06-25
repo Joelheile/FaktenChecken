@@ -49,14 +49,11 @@ export const AppExplanation = () => {
     };
   }, [api]);
 
-  const scrollTo = useCallback(
-    (index: number) => api?.scrollTo(index),
-    [api],
-  );
+  const scrollTo = useCallback((index: number) => api?.scrollTo(index), [api]);
 
   return (
-    <div className="w-full max-w-lg mt-10 fade-in-up-d3">
-      <h2 className="font-display text-lg font-bold mb-4 text-center">
+    <div className="fade-in-up-d3 mt-12 w-full">
+      <h2 className="mb-4 font-display text-xl font-bold">
         So funktioniert es
       </h2>
 
@@ -67,16 +64,16 @@ export const AppExplanation = () => {
       >
         <CarouselContent className="-ml-3">
           {STEPS.map((step) => (
-            <CarouselItem key={step.number} className="pl-3 basis-full">
-              <div className="border border-border rounded-lg bg-card p-5 md:p-6 min-h-[140px] flex items-start gap-4">
-                <span className="font-display text-3xl font-bold text-muted-foreground/30 leading-none select-none pt-0.5">
+            <CarouselItem key={step.number} className="basis-full pl-3">
+              <div className="flex min-h-[150px] items-start gap-4 rounded-xl border border-border bg-card p-5 shadow-soft md:p-6">
+                <span className="select-none font-display text-5xl font-extrabold leading-none text-primary">
                   {step.number}
                 </span>
                 <div>
-                  <h3 className="font-display font-semibold text-base mb-1.5">
+                  <h3 className="mb-1.5 font-display text-base font-semibold">
                     {step.title}
                   </h3>
-                  <p className="font-body text-sm text-muted-foreground leading-relaxed">
+                  <p className="font-body text-sm leading-relaxed text-muted-foreground">
                     {step.description}
                   </p>
                 </div>
@@ -85,7 +82,7 @@ export const AppExplanation = () => {
           ))}
         </CarouselContent>
 
-        <div className="flex items-center justify-center gap-4 mt-4">
+        <div className="mt-4 flex items-center justify-center gap-4">
           <button
             onClick={() => api?.scrollPrev()}
             className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"

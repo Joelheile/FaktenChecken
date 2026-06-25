@@ -1,6 +1,10 @@
+import { FactCheckReport } from "@/components/fact-check/types";
+import { parseTikTokVideo } from "@/lib/analytics";
+import { getSessionId, getVisitorId, newCheckId } from "@/lib/ids";
 import { fetchTikTokTranscript } from "./apify";
 import {
   askFollowupQuestion as askOpenAIFollowup,
+  CheckMeta,
   performFactCheck,
   resetConversation,
 } from "./openai";
@@ -11,10 +15,8 @@ import {
 export interface FactCheckResponse {
   /** The transcript text extracted from the TikTok video */
   transcript: string;
-  /** The fact-checking analysis performed on the transcript */
-  factCheck: string;
-  /** Optional conversation ID to maintain context across requests */
-  conversationId?: string;
+  /** The structured fact-checking report */
+  report: FactCheckReport;
 }
 
 /**
@@ -41,51 +43,58 @@ export class ApiError extends Error {
   }
 }
 
+/** Real progress signals emitted while a fact check runs. */
+export type FactCheckProgress =
+  | { stage: "transcript" }
+  | { stage: "analyzing" };
+
 /**
- * Main function to transcribe a TikTok video and perform fact checking on its content
+ * Transcribe a TikTok video and run the structured fact check on its content.
  *
- * @param tiktokUrl - The URL of the TikTok video to analyze (kann leer sein, wenn nur statement angegeben ist)
- * @param statement - Optional statement to be fact-checked alongside or instead of the video content
- * @returns A promise that resolves to a FactCheckResponse
- * @throws ApiError if the transcription or fact-checking fails
+ * @param tiktokUrl - URL of the TikTok video (may be empty if only a statement is given)
+ * @param statement - Optional statement to fact-check alongside or instead of the video
+ * @param onProgress - Receives real progress events (transcript fetched, then live model progress)
  */
 export async function transcribeAndFactCheck(
   tiktokUrl: string,
   statement?: string,
+  onProgress?: (progress: FactCheckProgress) => void,
 ): Promise<FactCheckResponse> {
-  if (tiktokUrl) {
-    console.log(`Analyzing TikTok URL: ${tiktokUrl}`);
-  }
-
-  if (statement) {
-    console.log(`Statement to check: ${statement}`);
-  }
-
-  // Reset conversation context for new request
   resetConversation();
+
+  const video = tiktokUrl
+    ? parseTikTokVideo(tiktokUrl)
+    : { video_id: null, video_author: null };
+  const meta: CheckMeta = {
+    check_id: newCheckId(),
+    session_id: getSessionId(),
+    visitor_id: getVisitorId(),
+    input: tiktokUrl ? "url" : "statement",
+    query: statement?.trim() || null,
+    video_url: tiktokUrl || null,
+    video_id: video.video_id,
+    author: video.video_author,
+    referrer: document.referrer || null,
+    lang: navigator.language || null,
+  };
 
   try {
     let transcript = "";
 
-    // Nur TikTok Video transkribieren wenn eine URL angegeben wurde
     if (tiktokUrl) {
-      // Get transcript from Apify API
-      transcript = await fetchTikTokTranscript(tiktokUrl);
+      onProgress?.({ stage: "transcript" });
+      transcript = await fetchTikTokTranscript(tiktokUrl, meta);
 
       if (!transcript || transcript.trim().length < 5) {
         console.warn("Retrieved empty or very short transcript");
       }
     }
 
-    // Get fact check from OpenAI
-    const factCheck = await performFactCheck(transcript, statement);
+    onProgress?.({ stage: "analyzing" });
+    const report = await performFactCheck(transcript, statement, meta);
 
-    return {
-      transcript,
-      factCheck,
-    };
+    return { transcript, report };
   } catch (error) {
-    // Determine error type and rethrow with appropriate context
     if (error instanceof Error) {
       const errorMessage = error.message;
 
@@ -98,14 +107,6 @@ export async function transcribeAndFactCheck(
           ApiErrorType.TRANSCRIPTION_ERROR,
         );
       } else if (
-        errorMessage.includes("ChatGPT") ||
-        errorMessage.includes("fact check")
-      ) {
-        throw new ApiError(
-          `Failed to perform fact check: ${errorMessage}`,
-          ApiErrorType.FACT_CHECK_ERROR,
-        );
-      } else if (
         errorMessage.includes("API key") ||
         errorMessage.includes("authentication")
       ) {
@@ -115,14 +116,12 @@ export async function transcribeAndFactCheck(
         );
       }
 
-      // Generic error fallback
       throw new ApiError(
         `Error during analysis: ${errorMessage}`,
         ApiErrorType.NETWORK_ERROR,
       );
     }
 
-    // For non-Error objects
     throw new ApiError(
       "An unknown error occurred during analysis",
       ApiErrorType.NETWORK_ERROR,
@@ -131,19 +130,11 @@ export async function transcribeAndFactCheck(
 }
 
 /**
- * Handles follow-up questions about a previously performed fact check
- *
- * @param question - The follow-up question to ask
- * @returns A promise that resolves to the answer string
- * @throws ApiError if the follow-up question processing fails
+ * Ask a follow-up question about the current fact check.
  */
 export async function askFollowupQuestion(question: string): Promise<string> {
   try {
-    // Get the answer from OpenAI
-    const answer = await askOpenAIFollowup(question);
-
-    // Format and return the answer with the follow-up question marker for UI display
-    return `--- Folgende Frage ---\n\n${question}\n\n${answer}`;
+    return await askOpenAIFollowup(question);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new ApiError(

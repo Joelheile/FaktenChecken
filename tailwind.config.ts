@@ -21,6 +21,7 @@ export default {
       fontFamily: {
         display: ['"Bricolage Grotesque"', "Georgia", "serif"],
         body: ['"Instrument Sans"', "system-ui", "sans-serif"],
+        mono: ['"Space Mono"', "ui-monospace", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -67,10 +68,10 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         verdict: {
-          true: "#1a7f37",
-          false: "#cf222e",
-          partial: "#9a6700",
-          unknown: "#64748b",
+          true: "#1f7a3d",
+          false: "#d62828",
+          partial: "#c77800",
+          unknown: "#6b7280",
         },
       },
       borderRadius: {

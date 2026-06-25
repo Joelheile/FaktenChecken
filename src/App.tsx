@@ -13,6 +13,7 @@ import {
 import Impressum from "./pages/Impressum";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import PreviewFC from "./pages/PreviewFC";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +46,7 @@ const AppRoutes = () => (
     <RouterRoutes>
       <Route path="/" element={<Index />} />
       <Route path="/impressum" element={<Impressum />} />
+      <Route path="/preview-fc" element={<PreviewFC />} />
       <Route path="*" element={<NotFound />} />
     </RouterRoutes>
   </>

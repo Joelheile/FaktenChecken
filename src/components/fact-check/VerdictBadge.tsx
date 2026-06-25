@@ -1,20 +1,28 @@
 import { cn } from "@/lib/utils";
 import { VerdictBadgeProps } from "./types";
+import { VERDICT_META } from "./utils";
 
-const STATUS_STYLES = {
-  true: "bg-verdict-true/10 text-verdict-true border-verdict-true/20",
-  false: "bg-verdict-false/10 text-verdict-false border-verdict-false/20",
-  partial: "bg-verdict-partial/10 text-verdict-partial border-verdict-partial/20",
-  unknown: "bg-verdict-unknown/10 text-verdict-unknown border-verdict-unknown/20",
-} as const;
+export const VerdictBadge = ({ status, size = "sm" }: VerdictBadgeProps) => {
+  const meta = VERDICT_META[status];
+  const Icon = meta.icon;
 
-export const VerdictBadge = ({ verdict, status }: VerdictBadgeProps) => (
-  <span
-    className={cn(
-      "inline-flex items-center px-2.5 py-1 rounded-md text-xs font-body font-semibold border",
-      STATUS_STYLES[status],
-    )}
-  >
-    {verdict}
-  </span>
-);
+  return (
+    <span
+      className={cn(
+        "verdict-pill border",
+        meta.text,
+        meta.border,
+        meta.fill,
+        size === "lg"
+          ? "gap-2 px-4 py-1.5 text-sm shadow-soft"
+          : "px-2.5 py-1 text-[0.7rem]",
+      )}
+    >
+      <Icon
+        className={cn(size === "lg" ? "h-4 w-4" : "h-3.5 w-3.5")}
+        strokeWidth={2.5}
+      />
+      {meta.label}
+    </span>
+  );
+};

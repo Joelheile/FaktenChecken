@@ -1,19 +1,31 @@
+import { ShieldCheck } from "lucide-react";
+
 export const Header = () => (
-  <header className="flex flex-col items-center text-center fade-in-up">
-    <div className="mb-6 bg-primary/80 rounded-xl px-5 py-2.5">
+  <header className="fade-in-up flex flex-col items-center text-center">
+    <div className="mb-7 rounded-lg bg-foreground px-3 py-1.5 shadow-soft">
       <img
         src="/schule.png"
         alt="Ernst-Schering-Schule"
-        className="h-12 md:h-14"
+        className="h-9 md:h-10"
       />
     </div>
 
-    <h1 className="text-3xl sm:text-4xl md:text-5xl font-display font-800 leading-tight mb-3">
+    <h1 className="font-display text-4xl font-extrabold leading-[1.02] tracking-tight sm:text-5xl">
       TikTok <span className="text-primary">FaktenCheck</span>
     </h1>
 
-    <p className="font-body text-base text-muted-foreground max-w-sm leading-relaxed">
-      Stimmt das wirklich, was du auf TikTok gesehen hast? Finde es hier heraus.
+    <p className="mt-4 max-w-md font-body text-base leading-relaxed text-muted-foreground">
+      Stimmt das wirklich, was du auf TikTok gesehen hast? Füg den Link ein, wir
+      prüfen die Fakten.
     </p>
+
+    <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+      <span className="trust-chip">
+        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+        Quellengeprüft
+      </span>
+      <span className="trust-chip">KI-Analyse</span>
+      <span className="trust-chip">Kostenlos</span>
+    </div>
   </header>
 );

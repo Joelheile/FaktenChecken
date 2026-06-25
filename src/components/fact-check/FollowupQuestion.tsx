@@ -6,15 +6,15 @@ export const FollowupQuestion = ({
   answer,
   index,
 }: FollowupQuestionProps) => (
-  <div className="border border-border rounded-lg bg-card overflow-hidden">
-    <div className="px-4 py-2.5 border-b border-border bg-muted/30">
-      <span className="font-display text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Frage {index + 1}
-      </span>
-      <p className="font-body text-sm font-medium mt-0.5">{question}</p>
+  <div className="overflow-hidden rounded-lg border bg-card shadow-soft">
+    <div className="border-b border-border bg-muted/40 px-4 py-2.5">
+      <span className="eyebrow">Frage {String(index + 1).padStart(2, "0")}</span>
+      <p className="mt-1 font-body text-sm font-medium [overflow-wrap:anywhere]">
+        {question}
+      </p>
     </div>
     <div className="px-4 py-3">
-      <div className="prose prose-sm max-w-none font-body text-muted-foreground [&_p]:leading-relaxed [&_p]:text-sm">
+      <div className="prose prose-sm max-w-none break-words font-body text-muted-foreground [&_a]:text-primary [&_a]:underline [&_p]:text-sm [&_p]:leading-relaxed">
         <ReactMarkdown>{answer}</ReactMarkdown>
       </div>
     </div>

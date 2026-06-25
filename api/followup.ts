@@ -1,10 +1,36 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { checkRateLimit, persistQuestion } from "./_db";
 
 export const config = {
   maxDuration: 30,
 };
 
-const MODEL = "gpt-4o-mini";
+const MODEL = "gpt-4o-mini-search-preview";
+
+// Bound untrusted client input. The whole conversation is client-supplied, so
+// without caps this endpoint is an open, web-search-enabled LLM proxy.
+const MAX_QUESTION_CHARS = 2000;
+const MAX_MESSAGES = 16;
+const MAX_MESSAGE_CHARS = 24_000;
+const ALLOWED_ROLES = new Set(["system", "user", "assistant"]);
+
+interface UrlCitation {
+  type: string;
+  url_citation?: { url: string; title?: string };
+}
+
+function appendSources(content: string, annotations?: UrlCitation[]): string {
+  if (!annotations?.length) return content;
+  const urls = [
+    ...new Set(
+      annotations
+        .filter((a) => a.type === "url_citation" && a.url_citation?.url)
+        .map((a) => a.url_citation!.url),
+    ),
+  ];
+  if (urls.length === 0) return content;
+  return `${content}\n\nQuellen:\n${urls.map((u) => `- ${u}`).join("\n")}`;
+}
 
 const FOLLOWUP_SYSTEM_PROMPT = `Du bist ein investigativer Faktenprüfer. Beantworte die Nachfrage des Nutzers auf Deutsch.
 
@@ -35,9 +61,14 @@ export default async function handler(
     return;
   }
 
-  const { question, messages } = req.body || {};
+  const {
+    question: rawQuestion,
+    messages,
+    check_id,
+    session_id,
+  } = req.body || {};
 
-  if (!question || typeof question !== "string") {
+  if (!rawQuestion || typeof rawQuestion !== "string") {
     res.status(400).json({ error: "Missing or invalid question" });
     return;
   }
@@ -46,6 +77,31 @@ export default async function handler(
     res.status(400).json({ error: "Missing or invalid messages array" });
     return;
   }
+
+  if (!(await checkRateLimit(req, "followup", 40, 3600))) {
+    res.status(429).json({
+      error: "Too many requests",
+      message: "Zu viele Anfragen. Bitte versuche es später erneut.",
+    });
+    return;
+  }
+
+  const question = rawQuestion.slice(0, MAX_QUESTION_CHARS);
+
+  // Keep only well-formed messages, trim each, and bound the history length.
+  const history: Message[] = messages
+    .filter(
+      (msg): msg is Message =>
+        msg &&
+        typeof msg.role === "string" &&
+        ALLOWED_ROLES.has(msg.role) &&
+        typeof msg.content === "string",
+    )
+    .slice(-MAX_MESSAGES)
+    .map((msg) => ({
+      role: msg.role,
+      content: msg.content.slice(0, MAX_MESSAGE_CHARS),
+    }));
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -56,13 +112,13 @@ export default async function handler(
   }
 
   try {
-    const updatedMessages: Message[] = messages.map((msg: Message) =>
-      msg.role === "system"
-        ? { role: "system", content: FOLLOWUP_SYSTEM_PROMPT }
-        : msg,
-    );
-
-    updatedMessages.push({ role: "user", content: question });
+    // Always inject exactly one system prompt (ours) and drop any client-sent
+    // system messages, so the guardrails hold even on a direct API call.
+    const updatedMessages: Message[] = [
+      { role: "system", content: FOLLOWUP_SYSTEM_PROMPT },
+      ...history.filter((msg) => msg.role !== "system"),
+      { role: "user", content: question },
+    ];
 
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -73,7 +129,7 @@ export default async function handler(
       body: JSON.stringify({
         model: MODEL,
         messages: updatedMessages,
-        temperature: 0.2,
+        web_search_options: {},
       }),
     });
 
@@ -83,8 +139,28 @@ export default async function handler(
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
-    const assistantContent = data.choices[0].message.content;
+    const message = data.choices?.[0]?.message;
+    if (!message?.content) {
+      throw new Error("OpenAI returned no content");
+    }
+
+    const assistantContent = appendSources(
+      message.content,
+      message.annotations,
+    );
     updatedMessages.push({ role: "assistant", content: assistantContent });
+
+    try {
+      await persistQuestion(
+        check_id ?? null,
+        session_id ?? null,
+        question,
+        assistantContent,
+        null,
+      );
+    } catch (dbError) {
+      console.error("Failed to persist question:", dbError);
+    }
 
     res.status(200).json({
       answer: assistantContent,
@@ -92,9 +168,20 @@ export default async function handler(
     });
   } catch (error) {
     console.error("Error during followup:", error);
-    res.status(500).json({
-      error: "Failed to answer follow-up question",
-      message: error instanceof Error ? error.message : "Unknown error",
-    });
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    try {
+      await persistQuestion(
+        check_id ?? null,
+        session_id ?? null,
+        question,
+        null,
+        message,
+      );
+    } catch (dbError) {
+      console.error("Failed to persist question error:", dbError);
+    }
+
+    res.status(500).json({ error: "Failed to answer follow-up question" });
   }
 }

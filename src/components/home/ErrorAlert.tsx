@@ -5,8 +5,11 @@ interface ErrorAlertProps {
 }
 
 export const ErrorAlert = ({ message }: ErrorAlertProps) => (
-  <div className="mt-4 flex items-start gap-3 border border-verdict-false/20 bg-verdict-false/5 rounded-lg p-4 fade-in">
-    <AlertCircle className="h-4 w-4 text-verdict-false mt-0.5 shrink-0" />
-    <p className="font-body text-sm text-verdict-false">{message}</p>
+  <div className="fade-in mt-4 flex items-start gap-3 rounded-lg border-2 border-verdict-false bg-verdict-false/[0.07] p-4">
+    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-verdict-false" />
+    <div>
+      <p className="eyebrow text-verdict-false">Fehler</p>
+      <p className="mt-0.5 font-body text-sm text-verdict-false">{message}</p>
+    </div>
   </div>
 );

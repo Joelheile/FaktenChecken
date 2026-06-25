@@ -4,64 +4,65 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 215 25% 15%;
+    /* Clean, trustworthy verification tool — cool paper, slate ink, confident blue */
+    --background: 210 25% 97%;
+    --foreground: 222 24% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 215 25% 15%;
+    --card-foreground: 222 24% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 215 25% 15%;
-    --primary: 217 91% 50%;
+    --popover-foreground: 222 24% 14%;
+    --primary: 224 64% 47%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 30% 94%;
-    --secondary-foreground: 215 25% 15%;
-    --muted: 210 25% 94%;
-    --muted-foreground: 215 15% 47%;
-    --accent: 210 30% 94%;
-    --accent-foreground: 215 25% 15%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 99%;
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 217 91% 50%;
-    --radius: 0.5rem;
-    --sidebar-background: 210 30% 96%;
-    --sidebar-foreground: 215 25% 15%;
-    --sidebar-primary: 217 91% 50%;
+    --secondary: 210 22% 93%;
+    --secondary-foreground: 222 24% 14%;
+    --muted: 210 22% 94%;
+    --muted-foreground: 218 12% 44%;
+    --accent: 224 60% 96%;
+    --accent-foreground: 224 64% 38%;
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 214 20% 89%;
+    --input: 214 20% 87%;
+    --ring: 224 64% 47%;
+    --radius: 0.7rem;
+    --sidebar-background: 210 24% 95%;
+    --sidebar-foreground: 222 24% 14%;
+    --sidebar-primary: 224 64% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 25% 94%;
-    --sidebar-accent-foreground: 215 25% 15%;
-    --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 217 91% 50%;
+    --sidebar-accent: 210 22% 94%;
+    --sidebar-accent-foreground: 222 24% 14%;
+    --sidebar-border: 214 20% 89%;
+    --sidebar-ring: 224 64% 47%;
   }
 
   .dark {
-    --background: 215 30% 6%;
-    --foreground: 210 20% 92%;
-    --card: 215 25% 9%;
-    --card-foreground: 210 20% 92%;
-    --popover: 215 25% 9%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 217 91% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 215 20% 14%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 215 20% 14%;
-    --muted-foreground: 210 15% 55%;
-    --accent: 215 20% 14%;
-    --accent-foreground: 210 20% 92%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 99%;
-    --border: 215 20% 18%;
-    --input: 215 20% 18%;
-    --ring: 217 91% 55%;
-    --sidebar-background: 215 25% 7%;
-    --sidebar-foreground: 210 20% 92%;
-    --sidebar-primary: 217 91% 55%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 215 20% 12%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 215 20% 18%;
-    --sidebar-ring: 217 91% 55%;
+    --background: 222 28% 9%;
+    --foreground: 210 22% 92%;
+    --card: 222 24% 12%;
+    --card-foreground: 210 22% 92%;
+    --popover: 222 24% 12%;
+    --popover-foreground: 210 22% 92%;
+    --primary: 222 70% 64%;
+    --primary-foreground: 222 28% 9%;
+    --secondary: 220 18% 17%;
+    --secondary-foreground: 210 22% 92%;
+    --muted: 220 18% 16%;
+    --muted-foreground: 215 14% 62%;
+    --accent: 222 30% 18%;
+    --accent-foreground: 222 70% 78%;
+    --destructive: 0 64% 56%;
+    --destructive-foreground: 210 22% 92%;
+    --border: 220 16% 22%;
+    --input: 220 16% 24%;
+    --ring: 222 70% 64%;
+    --sidebar-background: 222 28% 10%;
+    --sidebar-foreground: 210 22% 92%;
+    --sidebar-primary: 222 70% 64%;
+    --sidebar-primary-foreground: 222 28% 9%;
+    --sidebar-accent: 220 18% 15%;
+    --sidebar-accent-foreground: 210 22% 92%;
+    --sidebar-border: 220 16% 22%;
+    --sidebar-ring: 222 70% 64%;
   }
 }
 
@@ -69,38 +70,198 @@
   * {
     @apply border-border;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground font-body antialiased;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "kern", "liga", "calt";
+    position: relative;
+    min-height: 100vh;
   }
-  h1, h2, h3, h4, h5, h6 {
+
+  /* Layered atmosphere: a faint cool wash + hairline document grid.
+     Gives depth and a credible "dossier" feel without heavy texture. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-image:
+      radial-gradient(
+        80% 55% at 50% -10%,
+        hsl(var(--primary) / 0.08),
+        transparent 60%
+      ),
+      linear-gradient(to bottom, hsl(210 30% 99%), transparent 28%);
+  }
+
+  .dark body::before {
+    background-image:
+      radial-gradient(
+        80% 55% at 50% -10%,
+        hsl(var(--primary) / 0.14),
+        transparent 60%
+      ),
+      linear-gradient(to bottom, hsl(222 30% 13%), transparent 28%);
+  }
+
+  #root {
+    position: relative;
+    z-index: 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-display tracking-tight;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background-color: hsl(var(--primary) / 0.18);
+    color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Thin, unobtrusive scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--border));
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+}
+
+@layer components {
+  /* Quiet uppercase label for sections and trust signals */
+  .eyebrow {
+    @apply font-mono text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground;
+  }
+
+  /* Clean verdict pill */
+  .verdict-pill {
+    @apply inline-flex items-center gap-1.5 rounded-full border font-body text-xs font-semibold;
+  }
+
+  /* Trust chip used in header and reassurance rows */
+  .trust-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 font-body text-xs font-medium text-muted-foreground shadow-soft;
   }
 }
 
 @layer utilities {
+  /* Faint document dot-grid, masked so it fades toward the edges */
+  .bg-dots {
+    background-image: radial-gradient(
+      hsl(var(--foreground) / 0.05) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+    -webkit-mask-image: radial-gradient(
+      90% 70% at 50% 0%,
+      #000 30%,
+      transparent 90%
+    );
+    mask-image: radial-gradient(90% 70% at 50% 0%, #000 30%, transparent 90%);
+  }
+
+  /* Soft, professional elevation */
+  .shadow-soft {
+    box-shadow:
+      0 1px 2px hsl(222 24% 14% / 0.05),
+      0 6px 20px -8px hsl(222 24% 14% / 0.1);
+  }
+  .shadow-soft-lg {
+    box-shadow:
+      0 1px 3px hsl(222 24% 14% / 0.06),
+      0 16px 40px -16px hsl(222 24% 14% / 0.18);
+  }
+  .shadow-focus {
+    box-shadow:
+      0 0 0 3px hsl(var(--primary) / 0.16),
+      0 6px 20px -10px hsl(var(--primary) / 0.4);
+  }
+
   .fade-in {
     animation: fadeIn 0.5s ease both;
   }
   .fade-in-up {
-    animation: fadeInUp 0.5s ease both;
+    animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
   .fade-in-up-d1 {
-    animation: fadeInUp 0.5s ease 0.08s both;
+    animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
   }
   .fade-in-up-d2 {
-    animation: fadeInUp 0.5s ease 0.16s both;
+    animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
   }
   .fade-in-up-d3 {
-    animation: fadeInUp 0.5s ease 0.24s both;
+    animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+  }
+  .fade-in-up-d4 {
+    animation: fadeInUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Respect reduced-motion: kill entrance animations and smooth scroll */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

@@ -1,21 +1,14 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { CheckMeta, checkRateLimit, persistCheckError } from "./_db";
 
 export const config = {
   maxDuration: 120,
 };
 
-const APIFY_BASE_URL = 'https://api.apify.com/v2';
-const ACTOR_ID = 'emQXBCL3xePZYgJyn';
-const MAX_RETRIES = 60;
-const POLL_DELAY_MS = 2000;
-
-interface ApifyRunResponse {
-  data: {
-    id: string;
-    status: string;
-    defaultDatasetId: string;
-  };
-}
+const APIFY_BASE_URL = "https://api.apify.com/v2";
+const ACTOR_ID = "emQXBCL3xePZYgJyn";
+// Bound the actor run so it can't outlast the function and cause a hard timeout.
+const ACTOR_TIMEOUT_SECS = 100;
 
 interface ApifyDatasetItem {
   transcript?: string;
@@ -24,20 +17,20 @@ interface ApifyDatasetItem {
 }
 
 function processWebVTT(vtt: string): string {
-  const lines = vtt.split('\n');
+  const lines = vtt.split("\n");
   const filtered = lines
-    .filter(line => {
+    .filter((line) => {
       const trimmed = line.trim();
       if (!trimmed) return false;
-      if (trimmed.startsWith('WEBVTT')) return false;
+      if (trimmed.startsWith("WEBVTT")) return false;
       if (/^\d{2}:\d{2}:\d{2}/.test(trimmed)) return false;
-      if (trimmed.includes('-->')) return false;
+      if (trimmed.includes("-->")) return false;
       return true;
     })
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
-  
-  return filtered.join(' ');
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  return filtered.join(" ");
 }
 
 function extractTranscript(item: ApifyDatasetItem): string | null {
@@ -49,7 +42,7 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
 
   // Check subtitles array
   if (item.subtitles && Array.isArray(item.subtitles)) {
-    const joined = item.subtitles.join(' ').trim();
+    const joined = item.subtitles.join(" ").trim();
     if (joined) return joined;
   }
 
@@ -61,113 +54,101 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
   return null;
 }
 
-async function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function isTikTokUrl(url: string): boolean {
+  try {
+    const { protocol, hostname } = new URL(url);
+    if (protocol !== "https:") return false;
+    const host = hostname.toLowerCase();
+    return host === "tiktok.com" || host.endsWith(".tiktok.com");
+  } catch {
+    return false;
+  }
 }
 
 export default async function handler(
   req: VercelRequest,
-  res: VercelResponse
+  res: VercelResponse,
 ): Promise<void> {
-  // Only accept POST requests
-  if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+  if (req.method !== "POST") {
+    res.status(405).json({ error: "Method not allowed" });
     return;
   }
 
-  // Validate request body
-  const { url } = req.body || {};
-  if (!url || typeof url !== 'string') {
-    res.status(400).json({ error: 'Missing or invalid url parameter' });
+  const { url, meta } = req.body || {};
+  if (!url || typeof url !== "string" || !isTikTokUrl(url)) {
+    res.status(400).json({ error: "Missing or invalid TikTok url" });
     return;
   }
 
-  // Check for API token
+  if (!(await checkRateLimit(req, "transcript", 20, 3600))) {
+    res.status(429).json({
+      error: "Too many requests",
+      message: "Zu viele Anfragen. Bitte versuche es später erneut.",
+    });
+    return;
+  }
+
+  // Only used to record a failed check: the success path is persisted by
+  // /api/fact-check, so a video is written here only when transcription fails.
+  const checkMeta: CheckMeta | null =
+    meta?.check_id && meta?.session_id && meta?.input ? meta : null;
+
   const apiToken = process.env.APIFY_API_TOKEN;
   if (!apiToken) {
-    res.status(500).json({ error: 'Server configuration error: missing API token' });
+    res
+      .status(500)
+      .json({ error: "Server configuration error: missing API token" });
     return;
   }
 
   try {
-    // Start the actor run
-    const runResponse = await fetch(
-      `${APIFY_BASE_URL}/acts/${ACTOR_ID}/runs?token=${apiToken}`,
+    // Single synchronous call: run the actor and get its dataset items back.
+    // Apify blocks until the run finishes, so no manual polling loop is needed.
+    const response = await fetch(
+      `${APIFY_BASE_URL}/acts/${ACTOR_ID}/run-sync-get-dataset-items?timeout=${ACTOR_TIMEOUT_SECS}`,
       {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiToken}`,
         },
-        body: JSON.stringify({
-          videos: [url],
-        }),
-      }
+        body: JSON.stringify({ videos: [url] }),
+      },
     );
 
-    if (!runResponse.ok) {
-      throw new Error(`Failed to start actor run: ${runResponse.statusText}`);
-    }
-
-    const runData: ApifyRunResponse = await runResponse.json();
-    const runId = runData.data.id;
-    const datasetId = runData.data.defaultDatasetId;
-
-    // Poll for completion
-    let status = runData.data.status;
-    let retries = 0;
-
-    while (status !== 'SUCCEEDED' && retries < MAX_RETRIES) {
-      if (status === 'FAILED' || status === 'ABORTED' || status === 'TIMED-OUT') {
-        throw new Error(`Actor run ${status.toLowerCase()}`);
-      }
-
-      await delay(POLL_DELAY_MS);
-      retries++;
-
-      const statusResponse = await fetch(
-        `${APIFY_BASE_URL}/acts/${ACTOR_ID}/runs/${runId}?token=${apiToken}`
+    if (!response.ok) {
+      throw new Error(
+        `Apify run failed: ${response.status} ${response.statusText}`,
       );
-
-      if (!statusResponse.ok) {
-        throw new Error(`Failed to check run status: ${statusResponse.statusText}`);
-      }
-
-      const statusData: ApifyRunResponse = await statusResponse.json();
-      status = statusData.data.status;
     }
 
-    if (status !== 'SUCCEEDED') {
-      throw new Error('Actor run timed out');
+    const items: ApifyDatasetItem[] = await response.json();
+
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new Error("No data returned from actor");
     }
 
-    // Fetch dataset items
-    const datasetResponse = await fetch(
-      `${APIFY_BASE_URL}/datasets/${datasetId}/items?token=${apiToken}`
-    );
-
-    if (!datasetResponse.ok) {
-      throw new Error(`Failed to fetch dataset: ${datasetResponse.statusText}`);
-    }
-
-    const items: ApifyDatasetItem[] = await datasetResponse.json();
-
-    if (!items || items.length === 0) {
-      throw new Error('No data returned from actor');
-    }
-
-    // Extract transcript from first item
     const transcript = extractTranscript(items[0]);
 
     if (!transcript) {
-      throw new Error('No transcript found in response');
+      throw new Error("No transcript found in response");
     }
 
     res.status(200).json({ transcript });
   } catch (error) {
-    console.error('Error processing request:', error);
-    res.status(500).json({
-      error: 'Failed to fetch transcript',
-      message: error instanceof Error ? error.message : 'Unknown error',
-    });
+    console.error("Error processing request:", error);
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    // Record the uncheckable video (private, deleted, no captions, actor
+    // timeout) so the failure population isn't lost to the dataset.
+    if (checkMeta) {
+      try {
+        await persistCheckError(req, checkMeta, message, "", "transcript");
+      } catch (dbError) {
+        console.error("Failed to persist transcript error:", dbError);
+      }
+    }
+
+    res.status(500).json({ error: "Failed to fetch transcript" });
   }
 }

@@ -1,8 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader } from "lucide-react";
-import { useState } from "react";
+import { cn } from "@/lib/utils";
+import {
+  AlertCircle,
+  ArrowRight,
+  Link2,
+  Loader,
+  MessageSquareQuote,
+} from "lucide-react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export interface TikTokInputProps {
@@ -10,39 +15,64 @@ export interface TikTokInputProps {
   isLoading: boolean;
 }
 
-export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
-  const [url, setUrl] = useState("");
-  const [statement, setStatement] = useState("");
+type InputMode = "empty" | "link" | "link-invalid" | "statement";
 
-  const validateTikTokUrl = (input: string): boolean => {
-    const standardTiktokRegex =
-      /^(https?:\/\/)?(www\.|m\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
-    const shortTiktokRegex = /^(https?:\/\/)?vm\.tiktok\.com\/\w+/i;
-    return standardTiktokRegex.test(input) || shortTiktokRegex.test(input);
+const STANDARD_TIKTOK =
+  /^(https?:\/\/)?(www\.|m\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/i;
+const SHORT_TIKTOK = /^(https?:\/\/)?(vm|vt)\.tiktok\.com\/\w+/i;
+
+const isValidTikTokUrl = (input: string): boolean =>
+  STANDARD_TIKTOK.test(input) || SHORT_TIKTOK.test(input);
+
+const looksLikeUrl = (input: string): boolean =>
+  /tiktok\.com/i.test(input) ||
+  (/^https?:\/\//i.test(input) && !/\s/.test(input));
+
+const detectMode = (raw: string): InputMode => {
+  const value = raw.trim();
+  if (!value) return "empty";
+  if (looksLikeUrl(value))
+    return isValidTikTokUrl(value) ? "link" : "link-invalid";
+  return "statement";
+};
+
+export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
+  const [text, setText] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const mode = detectMode(text);
+  const canSubmit = mode === "link" || mode === "statement";
+
+  const autoGrow = () => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setText(event.target.value);
+    autoGrow();
+  };
 
-    const trimmedUrl = url.trim();
-    const trimmedStatement = statement.trim();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const value = text.trim();
 
-    if (!trimmedUrl && !trimmedStatement) {
+    if (mode === "empty") {
       toast.error("Bitte einen TikTok-Link oder eine Aussage eingeben");
       return;
     }
-
-    if (trimmedUrl && !validateTikTokUrl(trimmedUrl)) {
-      toast.error(
-        "Bitte gib eine gültige TikTok-URL ein (z.B. https://www.tiktok.com/@username/video/1234567890... oder https://vm.tiktok.com/...)",
-      );
+    if (mode === "link-invalid") {
+      toast.error("Das sieht nach einem Link aus, aber nicht nach TikTok");
       return;
     }
 
     try {
-      await onSubmit(trimmedUrl, trimmedStatement || undefined);
+      if (mode === "link") await onSubmit(value, undefined);
+      else await onSubmit("", value);
     } catch (error) {
-      console.error("Error submitting URL:", error);
+      console.error("Error submitting input:", error);
       toast.error("Fehler bei der Verarbeitung. Bitte versuche es erneut.");
     }
   };
@@ -50,73 +80,80 @@ export const TikTokInput = ({ onSubmit, isLoading }: TikTokInputProps) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="w-full max-w-lg mx-auto fade-in-up-d1"
+      className="w-full max-w-xl mx-auto fade-in-up-d1"
     >
-      <div className="bg-card border border-border rounded-lg p-5 md:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="tiktok-url"
-            className="text-sm font-body font-medium text-foreground"
-          >
-            TikTok Link
-          </label>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Input
-              id="tiktok-url"
-              placeholder="https://www.tiktok.com/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="flex-1 font-body text-sm h-11 md:h-12 border-border focus-visible:ring-foreground/20 placeholder:text-muted-foreground/50"
-              disabled={isLoading}
-              aria-label="TikTok URL"
-            />
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="h-11 md:h-12 px-6 font-body font-semibold text-sm"
-            >
-              {isLoading ? (
-                <>
-                  <Loader className="mr-2 h-4 w-4 animate-spin" />
-                  Lädt...
-                </>
-              ) : (
-                "Überprüfen"
-              )}
-            </Button>
-          </div>
-        </div>
+      <div
+        className={cn(
+          "rounded-2xl border bg-card p-3 shadow-soft transition-shadow focus-within:shadow-soft-lg",
+          mode === "link-invalid" ? "border-destructive/40" : "border-border",
+        )}
+      >
+        <textarea
+          ref={textareaRef}
+          value={text}
+          onChange={handleChange}
+          disabled={isLoading}
+          rows={1}
+          spellCheck={false}
+          aria-label="TikTok-Link oder Aussage"
+          placeholder="TikTok-Link einfügen oder eine Aussage eingeben…"
+          className="w-full resize-none rounded-xl bg-transparent px-3 py-3 font-body text-[0.95rem] leading-relaxed text-foreground outline-none placeholder:text-muted-foreground/55 disabled:opacity-60"
+        />
 
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-border" />
-          </div>
-          <div className="relative flex justify-center">
-            <span className="bg-card px-3 text-xs text-muted-foreground font-body">
-              oder
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="statement"
-            className="text-sm font-body font-medium text-foreground"
+        <div className="mt-1 flex items-center justify-between gap-3 pl-1">
+          <ModeHint mode={mode} />
+          <Button
+            type="submit"
+            disabled={!canSubmit || isLoading}
+            className="h-11 shrink-0 rounded-xl px-5 font-body text-sm font-semibold shadow-none transition-transform active:scale-[0.98]"
           >
-            Aussage prüfen
-          </label>
-          <Textarea
-            id="statement"
-            placeholder="Schreibe hier eine Aussage, die du checken willst..."
-            value={statement}
-            onChange={(e) => setStatement(e.target.value)}
-            className="resize-none font-body text-sm min-h-[80px] border-border focus-visible:ring-foreground/20 placeholder:text-muted-foreground/50"
-            disabled={isLoading}
-            rows={3}
-            aria-label="Aussage zum Überprüfen"
-          />
+            {isLoading ? (
+              <>
+                <Loader className="mr-2 h-4 w-4 animate-spin" />
+                Prüft…
+              </>
+            ) : (
+              <>
+                Überprüfen
+                <ArrowRight className="ml-1.5 h-4 w-4" />
+              </>
+            )}
+          </Button>
         </div>
       </div>
+
+      <p className="mt-3 text-center font-body text-xs text-muted-foreground">
+        KI kann Fehler machen. Ergebnisse immer selbst überprüfen. Dies ist
+        keine rechtliche, medizinische oder finanzielle Beratung.
+      </p>
     </form>
   );
+};
+
+const ModeHint = ({ mode }: { mode: InputMode }) => {
+  if (mode === "link") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-primary">
+        <Link2 className="h-3.5 w-3.5" />
+        TikTok-Link erkannt
+      </span>
+    );
+  }
+  if (mode === "statement") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-primary">
+        <MessageSquareQuote className="h-3.5 w-3.5" />
+        Aussage wird geprüft
+      </span>
+    );
+  }
+  if (mode === "link-invalid") {
+    return (
+      <span className="inline-flex items-center gap-1.5 font-body text-xs font-medium text-destructive">
+        <AlertCircle className="h-3.5 w-3.5" />
+        Kein gültiger TikTok-Link
+      </span>
+    );
+  }
+  return <span aria-hidden />;
 };
