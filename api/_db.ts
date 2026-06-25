@@ -162,6 +162,26 @@ const upsertSession = async (
   `;
 };
 
+/**
+ * Content-addressed cache lookup. Returns the most recent successful report for
+ * this hash, or null on miss / DB off. A hit means a prior identical check
+ * (same model + prompt + transcript + statement) already paid for the model run
+ * and web searches, so we can replay its report for free.
+ */
+export const lookupCachedReport = async (
+  contentHash: string,
+): Promise<Report | null> => {
+  if (!sql) return null;
+  const rows = await sql`
+    select report from checks
+    where content_hash = ${contentHash} and status = 'ok' and report is not null
+    order by created_at desc
+    limit 1
+  `;
+  const report = rows[0]?.report;
+  return report ? (report as Report) : null;
+};
+
 export const persistCheck = async (
   req: VercelRequest,
   meta: CheckMeta,
@@ -169,6 +189,8 @@ export const persistCheck = async (
   transcript: string,
   durationMs: number,
   usage: CheckUsage,
+  contentHash: string | null,
+  cached: boolean,
 ): Promise<void> => {
   if (!sql) return;
   await upsertSession(meta, requestContext(req));
@@ -181,7 +203,8 @@ export const persistCheck = async (
                         transcript, lang, verdict, fazit, caution, tip,
                         n_claims, duration_ms, status, stage,
                         model, tokens_in, tokens_out, reasoning_tokens,
-                        search_context, reasoning_effort, prompt_version)
+                        search_context, reasoning_effort, prompt_version,
+                        content_hash, report, cached)
     values (${checkId}, ${cap(meta.session_id, 64)}, ${meta.input},
             ${cap(meta.query, 2000)}, ${cap(meta.video_url, 500)},
             ${cap(meta.video_id, 64)}, ${cap(meta.author, 128)},
@@ -191,7 +214,8 @@ export const persistCheck = async (
             ${durationMs}, 'ok', 'complete',
             ${usage.model}, ${usage.tokens_in}, ${usage.tokens_out},
             ${usage.reasoning_tokens}, ${usage.search_context},
-            ${usage.reasoning_effort}, ${usage.prompt_version})
+            ${usage.reasoning_effort}, ${usage.prompt_version},
+            ${contentHash}, ${JSON.stringify(report)}::jsonb, ${cached})
     on conflict (id) do nothing
   `;
 

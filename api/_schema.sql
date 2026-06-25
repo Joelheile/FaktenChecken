@@ -45,6 +45,13 @@ create table if not exists checks (
   prompt_version   text                     -- bump on prompt/schema change
 );
 
+-- Content-addressed cache: identical checks (same model + prompt + transcript +
+-- statement) reuse a stored report instead of paying for a fresh model run and
+-- web searches. Run these on an existing DB; `create table` above won't add them.
+alter table checks add column if not exists content_hash text;
+alter table checks add column if not exists report jsonb;
+alter table checks add column if not exists cached boolean not null default false;
+
 create table if not exists claims (
   id           bigserial primary key,
   check_id     text not null references checks(id) on delete cascade,
@@ -85,6 +92,7 @@ create index if not exists checks_session_idx   on checks (session);
 create index if not exists checks_created_idx    on checks (created_at);
 create index if not exists checks_verdict_idx    on checks (verdict);
 create index if not exists checks_author_idx     on checks (author);
+create index if not exists checks_content_hash_idx on checks (content_hash) where status = 'ok';
 create index if not exists claims_check_idx      on claims (check_id);
 create index if not exists claims_verdict_idx    on claims (verdict);
 create index if not exists questions_check_idx   on questions (check_id);
