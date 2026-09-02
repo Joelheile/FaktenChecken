@@ -33,6 +33,24 @@ Dieses Projekt ist ein Herzensprojekt. Wenn du Ideen hast, wie wir es verbessern
 
 Vielen Dank an die [Ernst-Schering-Schule Berlin](https://www.ernst-schering-schule.de/) für die Bildungspartnerschaft!
 
+## 🤝 Hintergrund
+
+Das Projekt ist im Reverse-Mentoring-Programm "Voneinander Lernen!" der [Liz Mohn Stiftung](https://liz-mohn-stiftung.de/projekt/voneinander-lernen/) entstanden. Junge Digital Natives aus dem Netzwerk [Digital8](https://www.digital8.ai/reversementoring) bilden dabei Tandems mit Lehrkräften und entwickeln gemeinsam ein digitales Projekt für die Schule. Dieses Tool ist das Ergebnis des Tandems an der Ernst-Schering-Schule Berlin.
+
+## 🛠️ Lokal starten
+
+```bash
+npm install
+cp .env.example .env
+npm run dev:full
+```
+
+Trage in `.env` deine Keys ein: `APIFY_API_TOKEN` (TikTok-Transkript), `OPENAI_API_KEY` (Faktencheck). `DATABASE_URL` und `VITE_POSTHOG_API_KEY` sind optional (Analytics).
+
+## 📄 Lizenz
+
+MIT, siehe [LICENSE](LICENSE).
+
 ## 🔍 Hinweis
 
 FaktenChecken ist ein Bildungsprojekt. Es hilft beim Nachdenken, ersetzt aber nicht dein eigenes kritisches Urteilsvermögen!

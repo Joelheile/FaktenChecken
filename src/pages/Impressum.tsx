@@ -4,6 +4,15 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 
+const {
+  VITE_IMPRESSUM_NAME: name,
+  VITE_IMPRESSUM_STREET: street,
+  VITE_IMPRESSUM_CITY: city,
+  VITE_IMPRESSUM_PHONE: phone,
+  VITE_IMPRESSUM_EMAIL: email,
+  VITE_IMPRESSUM_VAT_ID: vatId,
+} = import.meta.env;
+
 const Impressum = () => {
   useEffect(() => {
     posthog.capture("impressum_page_viewed");
@@ -32,16 +41,16 @@ const Impressum = () => {
             <h2 className="font-display text-base font-bold text-foreground mb-1">
               Angaben gemäß § 5 TMG
             </h2>
-            <p>Joel Heil Escobar</p>
-            <p>Dörnbergweg 2</p>
-            <p>34587 Felsberg</p>
+            <p>{name}</p>
+            <p>{street}</p>
+            <p>{city}</p>
           </section>
           <section>
             <h2 className="font-display text-base font-bold text-foreground mb-1">
               Kontakt
             </h2>
-            <p>Telefon: +49 171 5871414</p>
-            <p>E-Mail: joel@cinoramic.io</p>
+            <p>Telefon: {phone}</p>
+            <p>E-Mail: {email}</p>
           </section>
           <section>
             <h2 className="font-display text-base font-bold text-foreground mb-1">
@@ -50,15 +59,14 @@ const Impressum = () => {
             <p>
               Umsatzsteuer-Identifikationsnummer gemäß §27 a Umsatzsteuergesetz:
             </p>
-            <p>DE366514999</p>
+            <p>{vatId}</p>
           </section>
           <section>
             <h2 className="font-display text-base font-bold text-foreground mb-1">
               Kooperation
             </h2>
             <p>
-              Dies ist eine Kooperation mit Stephan Borchadt von der Ernst
-              Scheering Schule.
+              Dies ist eine Kooperation mit der Ernst-Schering-Schule Berlin.
             </p>
           </section>
           <section>
