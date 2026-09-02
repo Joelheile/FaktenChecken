@@ -2,12 +2,7 @@ import type { FactCheckReport } from "@/components/fact-check/types";
 import { parseTikTokVideo } from "@/lib/analytics";
 import { getSessionId, getVisitorId, newCheckId } from "@/lib/ids";
 import { fetchTikTokTranscript } from "./apify";
-import {
-  askFollowupQuestion as askOpenAIFollowup,
-  type CheckMeta,
-  performFactCheck,
-  resetConversation,
-} from "./openai";
+import { type CheckMeta, performFactCheck } from "./openai";
 
 /**
  * Response structure for fact checking operations
@@ -27,7 +22,6 @@ export interface FactCheckResponse {
 export const ApiErrorType = {
   TRANSCRIPTION_ERROR: "transcription_error",
   FACT_CHECK_ERROR: "fact_check_error",
-  FOLLOWUP_ERROR: "followup_error",
   NETWORK_ERROR: "network_error",
   AUTH_ERROR: "auth_error",
 } as const;
@@ -65,8 +59,6 @@ export async function transcribeAndFactCheck(
   statement?: string,
   onProgress?: (progress: FactCheckProgress) => void
 ): Promise<FactCheckResponse> {
-  resetConversation();
-
   const video = tiktokUrl
     ? parseTikTokVideo(tiktokUrl)
     : { video_id: null, video_author: null };
@@ -92,10 +84,6 @@ export async function transcribeAndFactCheck(
       const result = await fetchTikTokTranscript(tiktokUrl, meta);
       transcript = result.transcript;
       videoId = result.videoId;
-
-      if (!transcript || transcript.trim().length < 5) {
-        console.warn("Retrieved empty or very short transcript");
-      }
     }
 
     onProgress?.({ stage: "analyzing" });
@@ -115,21 +103,6 @@ export async function transcribeAndFactCheck(
     throw new ApiError(
       "Bei der Analyse ist ein Fehler aufgetreten.",
       ApiErrorType.NETWORK_ERROR
-    );
-  }
-}
-
-/**
- * Ask a follow-up question about the current fact check.
- */
-export async function askFollowupQuestion(question: string): Promise<string> {
-  try {
-    return await askOpenAIFollowup(question);
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    throw new ApiError(
-      `Failed to answer follow-up question: ${errorMessage}`,
-      ApiErrorType.FOLLOWUP_ERROR
     );
   }
 }

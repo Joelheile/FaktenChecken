@@ -20,28 +20,17 @@ interface ApifyDatasetItem {
 }
 
 function processWebVTT(vtt: string): string {
-  const lines = vtt.split("\n");
-  const filtered = lines
-    .filter((line) => {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        return false;
-      }
-      if (trimmed.startsWith("WEBVTT")) {
-        return false;
-      }
-      if (VTT_TIMESTAMP.test(trimmed)) {
-        return false;
-      }
-      if (trimmed.includes("-->")) {
-        return false;
-      }
-      return true;
-    })
+  return vtt
+    .split("\n")
     .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  return filtered.join(" ");
+    .filter(
+      (line) =>
+        line.length > 0 &&
+        !line.startsWith("WEBVTT") &&
+        !VTT_TIMESTAMP.test(line) &&
+        !line.includes("-->")
+    )
+    .join(" ");
 }
 
 function extractTranscript(item: ApifyDatasetItem): string | null {
@@ -54,7 +43,7 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
   }
 
   // Check subtitles array
-  if (item.subtitles && Array.isArray(item.subtitles)) {
+  if (Array.isArray(item.subtitles)) {
     const joined = item.subtitles.join(" ").trim();
     if (joined) {
       return joined;

@@ -1,10 +1,5 @@
 import type { FactCheckReport } from "@/components/fact-check/types";
 
-interface Message {
-  content: string;
-  role: string;
-}
-
 /** Anonymous identity + context attached to a fact check for the dataset. */
 export interface CheckMeta {
   author: string | null;
@@ -19,10 +14,6 @@ export interface CheckMeta {
   visitor_id: string;
 }
 
-let currentConversationMessages: Message[] = [];
-let currentCheckId: string | null = null;
-let currentSession: string | null = null;
-
 export async function performFactCheck(
   transcript: string,
   statement: string | undefined,
@@ -34,9 +25,6 @@ export async function performFactCheck(
   ) {
     throw new Error("Kein Text im Video gefunden und keine Aussage angegeben.");
   }
-
-  currentCheckId = meta?.check_id ?? null;
-  currentSession = meta?.session_id ?? null;
 
   const response = await fetch("/api/fact-check", {
     method: "POST",
@@ -55,51 +43,5 @@ export async function performFactCheck(
     throw new Error("Invalid response from fact check API");
   }
 
-  currentConversationMessages = Array.isArray(data.messages)
-    ? data.messages
-    : [];
-
   return data.report as FactCheckReport;
-}
-
-export async function askFollowupQuestion(question: string): Promise<string> {
-  if (currentConversationMessages.length === 0) {
-    throw new Error(
-      "Keine aktive Konversation gefunden. Bitte führen Sie zuerst einen Faktencheck durch."
-    );
-  }
-
-  const response = await fetch("/api/followup", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      question,
-      messages: currentConversationMessages,
-      check_id: currentCheckId,
-      session_id: currentSession,
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API error: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-
-  if (!data.answer || typeof data.answer !== "string") {
-    throw new Error("Invalid response from followup API");
-  }
-
-  currentConversationMessages = Array.isArray(data.messages)
-    ? data.messages
-    : currentConversationMessages;
-
-  return data.answer;
-}
-
-export function resetConversation(): void {
-  currentConversationMessages = [];
-  currentCheckId = null;
-  currentSession = null;
 }

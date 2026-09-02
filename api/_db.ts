@@ -47,7 +47,7 @@ interface ReportClaim {
   urteil: string;
 }
 
-interface Report {
+export interface Report {
   behauptungen: ReportClaim[];
   fazit: string;
   gesamturteil: string;
@@ -284,22 +284,5 @@ export const persistCheckError = async (
             ${cap(meta.video_id, 64)}, ${cap(meta.author, 128)},
             ${cap(transcript, 20_000)}, 'error', ${stage}, ${cap(message, 4000)})
     on conflict (id) do nothing
-  `;
-};
-
-export const persistQuestion = async (
-  checkId: string | null,
-  sessionId: string | null,
-  question: string,
-  answer: string | null,
-  error: string | null
-): Promise<void> => {
-  if (!(sql && checkId)) {
-    return;
-  }
-  await sql`
-    insert into questions (check_id, session, question, answer, status, error)
-    values (${cap(checkId, 64)}, ${cap(sessionId, 64)}, ${cap(question, 2000)},
-            ${cap(answer, 20_000)}, ${error ? "error" : "ok"}, ${cap(error, 4000)})
   `;
 };

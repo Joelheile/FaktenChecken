@@ -1,6 +1,6 @@
-const NETWORK_ERROR = /failed to fetch|networkerror|load failed/i;
-
 import type { CheckMeta } from "./openai";
+
+const NETWORK_ERROR = /failed to fetch|networkerror|load failed/i;
 
 export interface TranscriptResult {
   transcript: string;
@@ -13,8 +13,6 @@ export async function fetchTikTokTranscript(
   meta?: CheckMeta
 ): Promise<TranscriptResult> {
   try {
-    console.log(`Fetching transcript for TikTok video: ${tiktokUrl}`);
-
     const response = await fetch("/api/transcript", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

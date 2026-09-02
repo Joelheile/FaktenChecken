@@ -73,7 +73,7 @@ export const HomePage = () => {
 
       trackFactCheckCompleted({
         report: result.report,
-        transcriptLength: result.transcript?.length ?? 0,
+        transcriptLength: result.transcript.length,
         durationMs: Date.now() - startedAt,
       });
 
@@ -97,10 +97,6 @@ export const HomePage = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleImpressumClick = () => {
-    trackImpressumClicked();
   };
 
   const handleReset = () => {
@@ -143,7 +139,7 @@ export const HomePage = () => {
         </main>
       </div>
 
-      <Footer onImpressumClick={handleImpressumClick} />
+      <Footer onImpressumClick={trackImpressumClicked} />
     </div>
   );
 };

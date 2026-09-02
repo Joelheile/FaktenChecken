@@ -23,7 +23,6 @@ Dieses Projekt soll:
 2. Füge sie in unser Tool ein
 3. Klicke auf "Prüfen"
 4. Schau dir an, was unser KI-System zum Inhalt sagt
-5. Stelle Fragen, wenn du mehr wissen willst!
 
 Das Tool analysiert, was im Video gesagt wird, und gibt dir eine Einschätzung, wie vertrauenswürdig die Informationen sind.
 

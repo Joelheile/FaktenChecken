@@ -25,11 +25,6 @@ export interface FactCheckReport {
   vorsicht: string;
 }
 
-export interface Followup {
-  answer: string;
-  question: string;
-}
-
 export interface VerdictBadgeProps {
   size?: "sm" | "lg";
   status: VerdictStatus;
@@ -38,17 +33,4 @@ export interface VerdictBadgeProps {
 export interface ClaimCardProps {
   claim: ReportClaim;
   index: number;
-}
-
-export interface FollowupQuestionProps {
-  answer: string;
-  index: number;
-  question: string;
-}
-
-export interface FollowupFormProps {
-  isSubmitting: boolean;
-  onChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => Promise<void>;
-  question: string;
 }

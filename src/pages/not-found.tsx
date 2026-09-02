@@ -7,10 +7,6 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
     posthog.capture("404_error", { path: location.pathname });
   }, [location.pathname]);
 

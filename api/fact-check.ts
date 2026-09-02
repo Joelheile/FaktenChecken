@@ -7,6 +7,7 @@ import {
   lookupCachedReport,
   persistCheck,
   persistCheckError,
+  type Report,
 } from "./_db.js";
 
 export const config = {
@@ -169,9 +170,9 @@ const REPORT_SCHEMA = {
   ],
 } as const;
 
-function buildUserPrompt(transcript: string, statement?: string): string {
-  const hasTranscript = transcript && transcript.trim().length >= 5;
-  const hasStatement = statement && statement.trim().length >= 3;
+function buildUserPrompt(transcript: string, statement: string): string {
+  const hasTranscript = transcript.trim().length >= 5;
+  const hasStatement = statement.trim().length >= 3;
 
   const parts: string[] = [
     "Prüfe das folgende Material. Wähle die wichtigsten überprüfbaren Behauptungen, recherchiere jede einzeln mit der Websuche und ordne sie kindgerecht ein.",
@@ -195,10 +196,7 @@ interface ResponsesOutputItem {
   type: string;
 }
 
-function extractOutputText(data: {
-  output_text?: string;
-  output?: ResponsesOutputItem[];
-}): string {
+function extractOutputText(data: ResponsesPayload): string {
   if (typeof data.output_text === "string" && data.output_text.length > 0) {
     return data.output_text;
   }
@@ -234,13 +232,6 @@ function buildContentHash(
     .digest("hex");
 }
 
-// Reconstruct a chat-style transcript so the follow-up endpoint keeps working.
-const buildMessages = (userPrompt: string, rawText: string) => [
-  { role: "system", content: SYSTEM_PROMPT },
-  { role: "user", content: userPrompt },
-  { role: "assistant", content: rawText },
-];
-
 // Persistence is best-effort: a DB failure must never break the user-facing
 // fact check.
 async function persistSafely(
@@ -270,10 +261,15 @@ interface ResponsesUsage {
   output_tokens_details?: { reasoning_tokens?: number };
 }
 
-function usageFromResponse(data: {
+interface ResponsesPayload {
+  error?: { message: string };
   model?: string;
+  output?: ResponsesOutputItem[];
+  output_text?: string;
   usage?: ResponsesUsage;
-}): CheckUsage {
+}
+
+function usageFromResponse(data: ResponsesPayload): CheckUsage {
   return {
     model: data.model ?? MODEL,
     tokens_in: data.usage?.input_tokens ?? null,
@@ -311,14 +307,13 @@ async function requestReport(apiKey: string, userPrompt: string) {
     }),
   });
 
-  const data = await response.json();
+  const data = (await response.json()) as ResponsesPayload;
 
   if (data.error) {
     throw new Error(`OpenAI API error: ${data.error.message}`);
   }
 
-  const rawText = extractOutputText(data);
-  return { data, rawText, report: JSON.parse(rawText) };
+  return { data, report: JSON.parse(extractOutputText(data)) as Report };
 }
 
 export default async function handler(
@@ -385,10 +380,7 @@ export default async function handler(
         )
       );
     }
-    res.status(200).json({
-      report: cached,
-      messages: buildMessages(userPrompt, JSON.stringify(cached)),
-    });
+    res.status(200).json({ report: cached });
     return;
   }
 
@@ -409,7 +401,7 @@ export default async function handler(
   }
 
   try {
-    const { data, rawText, report } = await requestReport(apiKey, userPrompt);
+    const { data, report } = await requestReport(apiKey, userPrompt);
 
     if (checkMeta) {
       await persistSafely("check", () =>
@@ -426,9 +418,7 @@ export default async function handler(
       );
     }
 
-    res
-      .status(200)
-      .json({ report, messages: buildMessages(userPrompt, rawText) });
+    res.status(200).json({ report });
   } catch (error) {
     console.error("Error during fact check:", error);
     if (checkMeta) {
