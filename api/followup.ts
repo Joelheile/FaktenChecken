@@ -2,10 +2,14 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { checkRateLimit, persistQuestion } from "./_db.js";
 
 export const config = {
-  maxDuration: 30,
+  maxDuration: 60,
 };
 
-const MODEL = "gpt-4o-mini-search-preview";
+// Same model and search settings as /api/fact-check, see the notes there.
+const MODEL = "gpt-5-mini";
+const SEARCH_CONTEXT_SIZE = "low";
+const REASONING_EFFORT = "low";
+const MAX_OUTPUT_TOKENS = 4000;
 
 // Bound untrusted client input. The whole conversation is client-supplied, so
 // without caps this endpoint is an open, web-search-enabled LLM proxy.
@@ -16,19 +20,45 @@ const ALLOWED_ROLES = new Set(["system", "user", "assistant"]);
 
 interface UrlCitation {
   type: string;
-  url_citation?: { url: string; title?: string };
+  url?: string;
+}
+
+interface OutputTextPart {
+  annotations?: UrlCitation[];
+  text?: string;
+  type: string;
+}
+
+interface ResponsesOutputItem {
+  content?: OutputTextPart[];
+  type: string;
+}
+
+function extractAnswer(data: {
+  output?: ResponsesOutputItem[];
+}): OutputTextPart {
+  const message = data.output?.find((item) => item.type === "message");
+  const textPart = message?.content?.find((c) => c.type === "output_text");
+  if (!textPart?.text) {
+    throw new Error("OpenAI returned no content");
+  }
+  return textPart;
 }
 
 function appendSources(content: string, annotations?: UrlCitation[]): string {
-  if (!annotations?.length) return content;
+  if (!annotations?.length) {
+    return content;
+  }
   const urls = [
     ...new Set(
-      annotations
-        .filter((a) => a.type === "url_citation" && a.url_citation?.url)
-        .map((a) => a.url_citation!.url),
+      annotations.flatMap((a) =>
+        a.type === "url_citation" && a.url ? [a.url] : []
+      )
     ),
   ];
-  if (urls.length === 0) return content;
+  if (urls.length === 0) {
+    return content;
+  }
   return `${content}\n\nQuellen:\n${urls.map((u) => `- ${u}`).join("\n")}`;
 }
 
@@ -48,13 +78,13 @@ Regeln:
 - Antworte IMMER auf Deutsch.`;
 
 interface Message {
-  role: string;
   content: string;
+  role: string;
 }
 
 export default async function handler(
   req: VercelRequest,
-  res: VercelResponse,
+  res: VercelResponse
 ): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -73,7 +103,7 @@ export default async function handler(
     return;
   }
 
-  if (!messages || !Array.isArray(messages)) {
+  if (!(messages && Array.isArray(messages))) {
     res.status(400).json({ error: "Missing or invalid messages array" });
     return;
   }
@@ -95,7 +125,7 @@ export default async function handler(
         msg &&
         typeof msg.role === "string" &&
         ALLOWED_ROLES.has(msg.role) &&
-        typeof msg.content === "string",
+        typeof msg.content === "string"
     )
     .slice(-MAX_MESSAGES)
     .map((msg) => ({
@@ -114,13 +144,16 @@ export default async function handler(
   try {
     // Always inject exactly one system prompt (ours) and drop any client-sent
     // system messages, so the guardrails hold even on a direct API call.
-    const updatedMessages: Message[] = [
-      { role: "system", content: FOLLOWUP_SYSTEM_PROMPT },
+    const conversation = [
       ...history.filter((msg) => msg.role !== "system"),
       { role: "user", content: question },
     ];
+    const updatedMessages: Message[] = [
+      { role: "system", content: FOLLOWUP_SYSTEM_PROMPT },
+      ...conversation,
+    ];
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -128,8 +161,13 @@ export default async function handler(
       },
       body: JSON.stringify({
         model: MODEL,
-        messages: updatedMessages,
-        web_search_options: {},
+        instructions: FOLLOWUP_SYSTEM_PROMPT,
+        input: conversation,
+        tools: [
+          { type: "web_search", search_context_size: SEARCH_CONTEXT_SIZE },
+        ],
+        reasoning: { effort: REASONING_EFFORT },
+        max_output_tokens: MAX_OUTPUT_TOKENS,
       }),
     });
 
@@ -139,14 +177,10 @@ export default async function handler(
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
-    const message = data.choices?.[0]?.message;
-    if (!message?.content) {
-      throw new Error("OpenAI returned no content");
-    }
-
+    const answer = extractAnswer(data);
     const assistantContent = appendSources(
-      message.content,
-      message.annotations,
+      answer.text ?? "",
+      answer.annotations
     );
     updatedMessages.push({ role: "assistant", content: assistantContent });
 
@@ -156,7 +190,7 @@ export default async function handler(
         session_id ?? null,
         question,
         assistantContent,
-        null,
+        null
       );
     } catch (dbError) {
       console.error("Failed to persist question:", dbError);
@@ -176,7 +210,7 @@ export default async function handler(
         session_id ?? null,
         question,
         null,
-        message,
+        message
       );
     } catch (dbError) {
       console.error("Failed to persist question error:", dbError);
