@@ -15,57 +15,57 @@ const sql = connection ? neon(connection) : null;
 
 /** Anonymous client identity + context the client knows about a check. */
 export interface CheckMeta {
-  check_id: string;
-  session_id: string;
-  visitor_id: string;
-  input: "url" | "statement";
-  query?: string | null;
-  video_url?: string | null;
-  video_id?: string | null;
   author?: string | null;
-  referrer?: string | null;
+  check_id: string;
+  input: "url" | "statement";
   lang?: string | null;
+  query?: string | null;
+  referrer?: string | null;
+  session_id: string;
+  video_id?: string | null;
+  video_url?: string | null;
+  visitor_id: string;
 }
 
 /** Model run cost + config, for per-check cost analysis and prompt A/B. */
 export interface CheckUsage {
   model: string | null;
-  tokens_in: number | null;
-  tokens_out: number | null;
+  prompt_version: string | null;
+  reasoning_effort: string | null;
   reasoning_tokens: number | null;
   search_context: string | null;
-  reasoning_effort: string | null;
-  prompt_version: string | null;
+  tokens_in: number | null;
+  tokens_out: number | null;
 }
 
 interface ReportClaim {
   behauptung: string;
-  urteil: string;
-  erklaerung: string;
   belege: string;
+  erklaerung: string;
   manipulation: string | null;
   quellen: { titel: string; url: string }[];
+  urteil: string;
 }
 
 interface Report {
-  quelle_sprache: string;
-  gesamturteil: string;
-  fazit: string;
-  vorsicht: string;
   behauptungen: ReportClaim[];
+  fazit: string;
+  gesamturteil: string;
+  quelle_sprache: string;
   selbst_pruefen: string;
+  vorsicht: string;
 }
 
 interface RequestContext {
+  browser: string;
   country: string | null;
   device: string;
-  browser: string;
   os: string;
 }
 
 const header = (req: VercelRequest, name: string): string => {
   const value = req.headers[name];
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+  return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
 };
 
 /** Truncate untrusted client strings before they reach the database. */
@@ -76,7 +76,9 @@ const clientIp = (req: VercelRequest): string => {
   // x-real-ip is set by the Vercel edge to the true peer address, so it can't
   // be forged by a client prepending its own x-forwarded-for to rotate IPs.
   const real = header(req, "x-real-ip");
-  if (real) return real;
+  if (real) {
+    return real;
+  }
   const forwarded = header(req, "x-forwarded-for");
   return forwarded ? forwarded.split(",")[0].trim() : "unknown";
 };
@@ -92,9 +94,11 @@ export const checkRateLimit = async (
   req: VercelRequest,
   endpoint: string,
   limit: number,
-  windowSeconds: number,
+  windowSeconds: number
 ): Promise<boolean> => {
-  if (!sql) return true;
+  if (!sql) {
+    return true;
+  }
   try {
     const bucket =
       Math.floor(Date.now() / 1000 / windowSeconds) * windowSeconds;
@@ -114,29 +118,38 @@ export const checkRateLimit = async (
   }
 };
 
-const parseDevice = (ua: string): string => {
-  if (/iPad|Tablet/i.test(ua)) return "tablet";
-  if (/Mobi|Android|iPhone/i.test(ua)) return "mobile";
-  return "desktop";
-};
+const firstMatch = (
+  rules: [RegExp, string][],
+  ua: string,
+  fallback: string
+): string => rules.find(([pattern]) => pattern.test(ua))?.[1] ?? fallback;
 
-const parseBrowser = (ua: string): string => {
-  if (/Edg\//i.test(ua)) return "Edge";
-  if (/OPR\/|Opera/i.test(ua)) return "Opera";
-  if (/Chrome\//i.test(ua)) return "Chrome";
-  if (/Firefox\//i.test(ua)) return "Firefox";
-  if (/Safari\//i.test(ua)) return "Safari";
-  return "Other";
-};
+const DEVICE_RULES: [RegExp, string][] = [
+  [/iPad|Tablet/i, "tablet"],
+  [/Mobi|Android|iPhone/i, "mobile"],
+];
+const BROWSER_RULES: [RegExp, string][] = [
+  [/Edg\//i, "Edge"],
+  [/OPR\/|Opera/i, "Opera"],
+  [/Chrome\//i, "Chrome"],
+  [/Firefox\//i, "Firefox"],
+  [/Safari\//i, "Safari"],
+];
+const OS_RULES: [RegExp, string][] = [
+  [/Windows/i, "Windows"],
+  [/Android/i, "Android"],
+  [/iPhone|iPad|iOS/i, "iOS"],
+  [/Mac OS X/i, "macOS"],
+  [/Linux/i, "Linux"],
+];
 
-const parseOs = (ua: string): string => {
-  if (/Windows/i.test(ua)) return "Windows";
-  if (/Android/i.test(ua)) return "Android";
-  if (/iPhone|iPad|iOS/i.test(ua)) return "iOS";
-  if (/Mac OS X/i.test(ua)) return "macOS";
-  if (/Linux/i.test(ua)) return "Linux";
-  return "Other";
-};
+const parseDevice = (ua: string): string =>
+  firstMatch(DEVICE_RULES, ua, "desktop");
+
+const parseBrowser = (ua: string): string =>
+  firstMatch(BROWSER_RULES, ua, "Other");
+
+const parseOs = (ua: string): string => firstMatch(OS_RULES, ua, "Other");
 
 const requestContext = (req: VercelRequest): RequestContext => {
   const ua = header(req, "user-agent");
@@ -150,9 +163,11 @@ const requestContext = (req: VercelRequest): RequestContext => {
 
 const upsertSession = async (
   meta: CheckMeta,
-  ctx: RequestContext,
+  ctx: RequestContext
 ): Promise<void> => {
-  if (!sql) return;
+  if (!sql) {
+    return;
+  }
   await sql`
     insert into sessions (id, visitor, country, device, browser, os, lang, referrer)
     values (${cap(meta.session_id, 64)}, ${cap(meta.visitor_id, 64)},
@@ -169,9 +184,11 @@ const upsertSession = async (
  * and web searches, so we can replay its report for free.
  */
 export const lookupCachedReport = async (
-  contentHash: string,
+  contentHash: string
 ): Promise<Report | null> => {
-  if (!sql) return null;
+  if (!sql) {
+    return null;
+  }
   const rows = await sql`
     select report from checks
     where content_hash = ${contentHash} and status = 'ok' and report is not null
@@ -190,9 +207,11 @@ export const persistCheck = async (
   durationMs: number,
   usage: CheckUsage,
   contentHash: string | null,
-  cached: boolean,
+  cached: boolean
 ): Promise<void> => {
-  if (!sql) return;
+  if (!sql) {
+    return;
+  }
   await upsertSession(meta, requestContext(req));
 
   // Cap once and reuse so the parent row id matches the claims FK below.
@@ -241,7 +260,7 @@ export const persistCheck = async (
               verdict text, explanation text, evidence text, manipulation text,
               sources jsonb, n_sources int)
        on conflict (check_id, idx) do nothing`,
-      [checkId, JSON.stringify(rows)],
+      [checkId, JSON.stringify(rows)]
     );
   }
 };
@@ -251,9 +270,11 @@ export const persistCheckError = async (
   meta: CheckMeta,
   message: string,
   transcript: string,
-  stage: "transcript" | "factcheck",
+  stage: "transcript" | "factcheck"
 ): Promise<void> => {
-  if (!sql) return;
+  if (!sql) {
+    return;
+  }
   await upsertSession(meta, requestContext(req));
   await sql`
     insert into checks (id, session, input, query, video_url, video_id, author,
@@ -271,9 +292,11 @@ export const persistQuestion = async (
   sessionId: string | null,
   question: string,
   answer: string | null,
-  error: string | null,
+  error: string | null
 ): Promise<void> => {
-  if (!sql || !checkId) return;
+  if (!(sql && checkId)) {
+    return;
+  }
   await sql`
     insert into questions (check_id, session, question, answer, status, error)
     values (${cap(checkId, 64)}, ${cap(sessionId, 64)}, ${cap(question, 2000)},

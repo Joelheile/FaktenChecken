@@ -9,11 +9,11 @@ interface VideoEmbedProps {
 export const VideoEmbed = ({ videoId }: VideoEmbedProps) => (
   <div className="relative mx-auto aspect-[9/16] w-full max-w-[320px] overflow-hidden rounded-xl border border-border bg-card shadow-soft">
     <iframe
-      title="TikTok Video"
-      src={`https://www.tiktok.com/embed/v2/${videoId}`}
-      className="absolute inset-0 h-full w-full"
       allow="autoplay; encrypted-media; fullscreen"
+      className="absolute inset-0 h-full w-full"
       loading="lazy"
+      src={`https://www.tiktok.com/embed/v2/${videoId}`}
+      title="TikTok Video"
     />
   </div>
 );

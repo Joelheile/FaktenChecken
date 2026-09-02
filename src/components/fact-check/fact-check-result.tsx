@@ -1,16 +1,18 @@
-import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 import { ShieldAlert } from "lucide-react";
 import { useMemo } from "react";
-import { ClaimCard } from "./ClaimCard";
-import { FactCheckReport, VerdictStatus } from "./types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+import { ClaimCard } from "./claim-card";
+import type { FactCheckReport, VerdictStatus } from "./types";
 import { VERDICT_META, verdictToStatus } from "./utils";
-import { VideoEmbed } from "./VideoEmbed";
+import { VideoEmbed } from "./video-embed";
+
+const NO_CAUTION = /keine\s+auff/i;
 
 interface FactCheckResultProps {
+  isLoading: boolean;
   report: FactCheckReport;
   videoId: string | null;
-  isLoading: boolean;
 }
 
 const TALLY_ORDER: VerdictStatus[] = ["true", "partial", "false", "unknown"];
@@ -48,8 +50,7 @@ export const FactCheckResult = ({
   const HeroIcon = meta.icon;
   const claimCount = report.behauptungen.length;
   const presentVerdicts = TALLY_ORDER.filter((s) => tally[s] > 0);
-  const showCaution =
-    !!report.vorsicht && !/keine\s+auff/i.test(report.vorsicht);
+  const showCaution = !!report.vorsicht && !NO_CAUTION.test(report.vorsicht);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -60,7 +61,7 @@ export const FactCheckResult = ({
       <section
         className={cn(
           "rounded-xl border bg-card p-5 shadow-soft md:p-6",
-          meta.border,
+          meta.border
         )}
       >
         <div className="flex items-center gap-2.5">
@@ -70,20 +71,20 @@ export const FactCheckResult = ({
           />
           <h2
             className={cn(
-              "font-display text-xl font-bold leading-tight [text-wrap:balance] sm:text-2xl",
-              meta.text,
+              "font-bold font-display text-xl leading-tight [text-wrap:balance] sm:text-2xl",
+              meta.text
             )}
           >
             {meta.headline}
           </h2>
         </div>
 
-        <p className="mt-3 font-body text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
+        <p className="mt-3 font-body text-foreground/90 text-sm leading-relaxed [overflow-wrap:anywhere]">
           {report.fazit}
         </p>
 
         {showCaution && (
-          <div className="mt-4 flex items-start gap-2.5 border-l-2 border-verdict-partial/50 pl-3">
+          <div className="mt-4 flex items-start gap-2.5 border-verdict-partial/50 border-l-2 pl-3">
             <ShieldAlert
               className="mt-0.5 h-4 w-4 shrink-0 text-verdict-partial"
               strokeWidth={2.5}
@@ -92,7 +93,7 @@ export const FactCheckResult = ({
               <p className="eyebrow mb-0.5 text-verdict-partial">
                 Vorsicht im Video
               </p>
-              <p className="font-body text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
+              <p className="font-body text-foreground/90 text-sm leading-relaxed [overflow-wrap:anywhere]">
                 {report.vorsicht}
               </p>
             </div>
@@ -101,28 +102,28 @@ export const FactCheckResult = ({
 
         {/* Verdict tally */}
         {claimCount > 0 && (
-          <div className="mt-5 space-y-2.5 border-t border-border/60 pt-4">
+          <div className="mt-5 space-y-2.5 border-border/60 border-t pt-4">
             <div
+              aria-label="Verteilung der Bewertungen"
               className="flex h-1.5 overflow-hidden rounded-full bg-muted"
               role="img"
-              aria-label="Verteilung der Bewertungen"
             >
               {presentVerdicts.map((s) => (
                 <div
-                  key={s}
                   className={VERDICT_META[s].solid}
+                  key={s}
                   style={{ flexGrow: tally[s] }}
                 />
               ))}
             </div>
             <div className="flex flex-wrap gap-x-3 gap-y-1">
-              <span className="font-mono text-xs text-muted-foreground">
+              <span className="font-mono text-muted-foreground text-xs">
                 {claimCount} geprüft:
               </span>
               {presentVerdicts.map((s) => {
                 const m = VERDICT_META[s];
                 return (
-                  <span key={s} className={cn("font-mono text-xs", m.text)}>
+                  <span className={cn("font-mono text-xs", m.text)} key={s}>
                     {tally[s]} {m.label}
                   </span>
                 );
@@ -136,12 +137,12 @@ export const FactCheckResult = ({
       {claimCount > 0 && (
         <section>
           <p className="eyebrow mb-1">Beweisaufnahme</p>
-          <h2 className="mb-4 font-display text-lg font-bold">
+          <h2 className="mb-4 font-bold font-display text-lg">
             Behauptung für Behauptung
           </h2>
           <div className="space-y-3">
             {report.behauptungen.map((claim, index) => (
-              <ClaimCard key={index} claim={claim} index={index} />
+              <ClaimCard claim={claim} index={index} key={claim.behauptung} />
             ))}
           </div>
         </section>

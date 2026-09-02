@@ -1,6 +1,6 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
 @layer base {
   :root {
@@ -76,25 +76,25 @@
   }
 
   body {
-    @apply bg-background text-foreground font-body antialiased;
+    position: relative;
+    min-height: 100dvh;
+    font-feature-settings: "kern", "liga", "calt";
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    font-feature-settings: "kern", "liga", "calt";
-    position: relative;
-    min-height: 100vh;
-    min-height: 100dvh;
+    @apply bg-background text-foreground font-body antialiased;
   }
 
   /* Layered atmosphere: a faint cool wash + hairline document grid.
      Gives depth and a credible "dossier" feel without heavy texture. */
   body::before {
-    content: "";
     position: fixed;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background-image: radial-gradient(
+    content: "";
+    background-image:
+      radial-gradient(
         80% 55% at 50% -10%,
         hsl(var(--primary) / 0.08),
         transparent 60%
@@ -103,7 +103,8 @@
   }
 
   .dark body::before {
-    background-image: radial-gradient(
+    background-image:
+      radial-gradient(
         80% 55% at 50% -10%,
         hsl(var(--primary) / 0.14),
         transparent 60%
@@ -122,8 +123,8 @@
   h4,
   h5,
   h6 {
-    @apply font-display tracking-tight;
     text-wrap: balance;
+    @apply font-display tracking-tight;
   }
 
   p {
@@ -131,8 +132,8 @@
   }
 
   ::selection {
-    background-color: hsl(var(--primary) / 0.18);
     color: hsl(var(--foreground));
+    background-color: hsl(var(--primary) / 0.18);
   }
 
   :focus-visible {
@@ -143,8 +144,8 @@
 
   /* Thin, unobtrusive scrollbars */
   * {
-    scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
+    scrollbar-width: thin;
   }
   ::-webkit-scrollbar {
     width: 10px;
@@ -152,8 +153,8 @@
   }
   ::-webkit-scrollbar-thumb {
     background-color: hsl(var(--border));
-    border: 3px solid transparent;
     background-clip: content-box;
+    border: 3px solid transparent;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -186,11 +187,11 @@
     position: relative;
   }
   .bg-dots::before {
-    content: "";
     position: absolute;
     inset: 0;
     z-index: -1;
     pointer-events: none;
+    content: "";
     background-image: radial-gradient(
       hsl(var(--foreground) / 0.05) 1px,
       transparent 1px
@@ -269,8 +270,8 @@
   *,
   *::before,
   *::after {
+    transition-duration: 0.001ms !important;
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
   }
 }

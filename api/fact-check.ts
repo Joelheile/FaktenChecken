@@ -1,7 +1,8 @@
 import { createHash } from "node:crypto";
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
-  CheckMeta,
+  type CheckMeta,
+  type CheckUsage,
   checkRateLimit,
   lookupCachedReport,
   persistCheck,
@@ -178,7 +179,7 @@ function buildUserPrompt(transcript: string, statement?: string): string {
 
   if (hasStatement) {
     parts.push(
-      `Diese Aussage soll besonders gründlich geprüft werden:\n<aussage>\n${statement}\n</aussage>`,
+      `Diese Aussage soll besonders gründlich geprüft werden:\n<aussage>\n${statement}\n</aussage>`
     );
   }
 
@@ -190,8 +191,8 @@ function buildUserPrompt(transcript: string, statement?: string): string {
 }
 
 interface ResponsesOutputItem {
-  type: string;
   content?: { type: string; text?: string }[];
+  type: string;
 }
 
 function extractOutputText(data: {
@@ -209,9 +210,120 @@ function extractOutputText(data: {
   return textPart.text;
 }
 
+const WHITESPACE = /\s+/g;
+const normalize = (value: string): string =>
+  value.trim().toLowerCase().replace(WHITESPACE, " ");
+
+// Content-addressed cache key. Keyed on the stable TikTok video id (when
+// present) plus a normalized transcript/statement, so the same video hits the
+// cache even when Apify returns slightly different whitespace between runs.
+// Normalization keeps the key tied to actual content, so a client can't poison
+// a popular video's cached verdict by pairing its id with unrelated text.
+// PROMPT_VERSION + knobs bust the cache on any prompt/model/config change;
+// bump PROMPT_VERSION whenever SYSTEM_PROMPT, the schema, or MAX_CLAIMS change.
+function buildContentHash(
+  videoId: string,
+  transcript: string,
+  statement: string
+): string {
+  const cacheSubject = `${videoId}\0${normalize(transcript)}\0${normalize(statement)}`;
+  return createHash("sha256")
+    .update(
+      `${MODEL}\0${SEARCH_CONTEXT_SIZE}\0${REASONING_EFFORT}\0${PROMPT_VERSION}\0${cacheSubject}`
+    )
+    .digest("hex");
+}
+
+// Reconstruct a chat-style transcript so the follow-up endpoint keeps working.
+const buildMessages = (userPrompt: string, rawText: string) => [
+  { role: "system", content: SYSTEM_PROMPT },
+  { role: "user", content: userPrompt },
+  { role: "assistant", content: rawText },
+];
+
+// Persistence is best-effort: a DB failure must never break the user-facing
+// fact check.
+async function persistSafely(
+  label: string,
+  write: () => Promise<unknown>
+): Promise<void> {
+  try {
+    await write();
+  } catch (dbError) {
+    console.error(`Failed to persist ${label}:`, dbError);
+  }
+}
+
+const CACHED_USAGE: CheckUsage = {
+  model: null,
+  tokens_in: null,
+  tokens_out: null,
+  reasoning_tokens: null,
+  search_context: SEARCH_CONTEXT_SIZE,
+  reasoning_effort: REASONING_EFFORT,
+  prompt_version: PROMPT_VERSION,
+};
+
+interface ResponsesUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  output_tokens_details?: { reasoning_tokens?: number };
+}
+
+function usageFromResponse(data: {
+  model?: string;
+  usage?: ResponsesUsage;
+}): CheckUsage {
+  return {
+    model: data.model ?? MODEL,
+    tokens_in: data.usage?.input_tokens ?? null,
+    tokens_out: data.usage?.output_tokens ?? null,
+    reasoning_tokens:
+      data.usage?.output_tokens_details?.reasoning_tokens ?? null,
+    search_context: SEARCH_CONTEXT_SIZE,
+    reasoning_effort: REASONING_EFFORT,
+    prompt_version: PROMPT_VERSION,
+  };
+}
+
+async function requestReport(apiKey: string, userPrompt: string) {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      instructions: SYSTEM_PROMPT,
+      input: userPrompt,
+      tools: [{ type: "web_search", search_context_size: SEARCH_CONTEXT_SIZE }],
+      reasoning: { effort: REASONING_EFFORT },
+      max_output_tokens: MAX_OUTPUT_TOKENS,
+      text: {
+        format: {
+          type: "json_schema",
+          name: "faktencheck",
+          strict: true,
+          schema: REPORT_SCHEMA,
+        },
+      },
+    }),
+  });
+
+  const data = await response.json();
+
+  if (data.error) {
+    throw new Error(`OpenAI API error: ${data.error.message}`);
+  }
+
+  const rawText = extractOutputText(data);
+  return { data, rawText, report: JSON.parse(rawText) };
+}
+
 export default async function handler(
   req: VercelRequest,
-  res: VercelResponse,
+  res: VercelResponse
 ): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -234,80 +346,50 @@ export default async function handler(
   const hasTranscript = transcript.trim().length >= 5;
   const hasStatement = statement.trim().length >= 3;
 
-  if (!hasTranscript && !hasStatement) {
+  if (!(hasTranscript || hasStatement)) {
     res
       .status(400)
       .json({ error: "Either transcript or statement is required" });
     return;
   }
 
-  // Persistence is best-effort and anonymous: only runs when the client sends
-  // valid identity meta, and a DB failure is swallowed so the check still returns.
+  // Persistence only runs when the client sends valid, anonymous identity meta.
   const checkMeta: CheckMeta | null =
     meta?.check_id && meta?.session_id && meta?.input ? meta : null;
 
   const userPrompt = buildUserPrompt(transcript, statement);
   const startedAt = Date.now();
-
-  // Content-addressed cache key. Keyed on the stable TikTok video id (when
-  // present) plus a normalized transcript/statement, so the same video hits the
-  // cache even when Apify returns slightly different whitespace between runs.
-  // Normalization keeps the key tied to actual content, so a client can't poison
-  // a popular video's cached verdict by pairing its id with unrelated text.
-  // PROMPT_VERSION + knobs bust the cache on any prompt/model/config change;
-  // bump PROMPT_VERSION whenever SYSTEM_PROMPT, the schema, or MAX_CLAIMS change.
-  const norm = (value: string): string =>
-    value.trim().toLowerCase().replace(/\s+/g, " ");
   const videoId =
     typeof meta?.video_id === "string" ? meta.video_id.trim() : "";
-  const cacheSubject = `${videoId}\0${norm(transcript)}\0${norm(statement)}`;
-  const contentHash = createHash("sha256")
-    .update(
-      `${MODEL}\0${SEARCH_CONTEXT_SIZE}\0${REASONING_EFFORT}\0${PROMPT_VERSION}\0${cacheSubject}`,
-    )
-    .digest("hex");
+  const contentHash = buildContentHash(videoId, transcript, statement);
 
   // Cache check runs BEFORE the rate limit: a repeat of an already-checked video
   // costs no model call and no web search, so it neither pays nor counts against
   // the per-IP budget. This is what makes classroom-scale sharing affordable.
-  try {
-    const cached = await lookupCachedReport(contentHash);
-    if (cached) {
-      const rawText = JSON.stringify(cached);
-      const messages = [
-        { role: "system", content: SYSTEM_PROMPT },
-        { role: "user", content: userPrompt },
-        { role: "assistant", content: rawText },
-      ];
-      if (checkMeta) {
-        try {
-          await persistCheck(
-            req,
-            checkMeta,
-            cached,
-            transcript,
-            Date.now() - startedAt,
-            {
-              model: null,
-              tokens_in: null,
-              tokens_out: null,
-              reasoning_tokens: null,
-              search_context: SEARCH_CONTEXT_SIZE,
-              reasoning_effort: REASONING_EFFORT,
-              prompt_version: PROMPT_VERSION,
-            },
-            contentHash,
-            true,
-          );
-        } catch (dbError) {
-          console.error("Failed to persist cached check:", dbError);
-        }
-      }
-      res.status(200).json({ report: cached, messages });
-      return;
-    }
-  } catch (cacheError) {
+  const cached = await lookupCachedReport(contentHash).catch((cacheError) => {
     console.error("Cache lookup failed, continuing to live check:", cacheError);
+    return null;
+  });
+  if (cached) {
+    if (checkMeta) {
+      await persistSafely("cached check", () =>
+        persistCheck(
+          req,
+          checkMeta,
+          cached,
+          transcript,
+          Date.now() - startedAt,
+          CACHED_USAGE,
+          contentHash,
+          true
+        )
+      );
+    }
+    res.status(200).json({
+      report: cached,
+      messages: buildMessages(userPrompt, JSON.stringify(cached)),
+    });
+    return;
   }
 
   if (!(await checkRateLimit(req, "fact-check", 20, 3600))) {
@@ -327,93 +409,39 @@ export default async function handler(
   }
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        instructions: SYSTEM_PROMPT,
-        input: userPrompt,
-        tools: [
-          { type: "web_search", search_context_size: SEARCH_CONTEXT_SIZE },
-        ],
-        reasoning: { effort: REASONING_EFFORT },
-        max_output_tokens: MAX_OUTPUT_TOKENS,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "faktencheck",
-            strict: true,
-            schema: REPORT_SCHEMA,
-          },
-        },
-      }),
-    });
-
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(`OpenAI API error: ${data.error.message}`);
-    }
-
-    const rawText = extractOutputText(data);
-    const report = JSON.parse(rawText);
-
-    // Reconstruct a chat-style transcript so the follow-up endpoint keeps working.
-    const messages = [
-      { role: "system", content: SYSTEM_PROMPT },
-      { role: "user", content: userPrompt },
-      { role: "assistant", content: rawText },
-    ];
+    const { data, rawText, report } = await requestReport(apiKey, userPrompt);
 
     if (checkMeta) {
-      try {
-        await persistCheck(
+      await persistSafely("check", () =>
+        persistCheck(
           req,
           checkMeta,
           report,
           transcript,
           Date.now() - startedAt,
-          {
-            model: data.model ?? MODEL,
-            tokens_in: data.usage?.input_tokens ?? null,
-            tokens_out: data.usage?.output_tokens ?? null,
-            reasoning_tokens:
-              data.usage?.output_tokens_details?.reasoning_tokens ?? null,
-            search_context: SEARCH_CONTEXT_SIZE,
-            reasoning_effort: REASONING_EFFORT,
-            prompt_version: PROMPT_VERSION,
-          },
+          usageFromResponse(data),
           contentHash,
-          false,
-        );
-      } catch (dbError) {
-        console.error("Failed to persist check:", dbError);
-      }
+          false
+        )
+      );
     }
 
-    res.status(200).json({ report, messages });
+    res
+      .status(200)
+      .json({ report, messages: buildMessages(userPrompt, rawText) });
   } catch (error) {
     console.error("Error during fact check:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-
     if (checkMeta) {
-      try {
-        await persistCheckError(
+      await persistSafely("check error", () =>
+        persistCheckError(
           req,
           checkMeta,
-          message,
+          error instanceof Error ? error.message : "Unknown error",
           transcript,
-          "factcheck",
-        );
-      } catch (dbError) {
-        console.error("Failed to persist check error:", dbError);
-      }
+          "factcheck"
+        )
+      );
     }
-
     res.status(500).json({ error: "Failed to perform fact check" });
   }
 }

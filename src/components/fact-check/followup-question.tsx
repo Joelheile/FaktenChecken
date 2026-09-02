@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import { FollowupQuestionProps } from "./types";
+import type { FollowupQuestionProps } from "./types";
 
 export const FollowupQuestion = ({
   question,
@@ -7,9 +7,11 @@ export const FollowupQuestion = ({
   index,
 }: FollowupQuestionProps) => (
   <div className="overflow-hidden rounded-lg border bg-card shadow-soft">
-    <div className="border-b border-border bg-muted/40 px-4 py-2.5">
-      <span className="eyebrow">Frage {String(index + 1).padStart(2, "0")}</span>
-      <p className="mt-1 font-body text-sm font-medium [overflow-wrap:anywhere]">
+    <div className="border-border border-b bg-muted/40 px-4 py-2.5">
+      <span className="eyebrow">
+        Frage {String(index + 1).padStart(2, "0")}
+      </span>
+      <p className="mt-1 font-body font-medium text-sm [overflow-wrap:anywhere]">
         {question}
       </p>
     </div>

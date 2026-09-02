@@ -1,6 +1,6 @@
-import react from "@vitejs/plugin-react-swc";
 import type { IncomingMessage, ServerResponse } from "node:http";
-import path from "path";
+import path from "node:path";
+import react from "@vitejs/plugin-react-swc";
 import { defineConfig, loadEnv, type Plugin, type ViteDevServer } from "vite";
 
 // Minimal Vercel request/response surface the /api handlers rely on.
@@ -15,6 +15,36 @@ type DevRes = ServerResponse & {
 };
 type ApiHandler = (req: DevReq, res: DevRes) => unknown;
 
+const TRAILING_SLASHES = /\/+$/;
+const API_ROUTE = /^\/api\/[a-zA-Z0-9_-]+$/;
+
+function withResponseHelpers(res: ServerResponse): DevRes {
+  const devRes = res as DevRes;
+  devRes.status = (code) => {
+    res.statusCode = code;
+    return devRes;
+  };
+  devRes.json = (payload) => {
+    res.setHeader("content-type", "application/json");
+    res.end(JSON.stringify(payload));
+    return devRes;
+  };
+  devRes.send = (payload) => {
+    res.end(typeof payload === "string" ? payload : JSON.stringify(payload));
+    return devRes;
+  };
+  return devRes;
+}
+
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(chunk as Buffer);
+  }
+  const raw = Buffer.concat(chunks).toString("utf8");
+  return raw ? JSON.parse(raw) : {};
+}
+
 // Serves the Vercel serverless functions in api/*.ts directly inside the Vite
 // dev server, so `npm run dev` answers /api/* requests instead of 404ing.
 // Production is unaffected: Vercel runs these same files as real functions.
@@ -24,49 +54,35 @@ function devApiPlugin(): Plugin {
     configureServer(server: ViteDevServer) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url ?? "";
-        if (!url.startsWith("/api/")) return next();
+        if (!url.startsWith("/api/")) {
+          return next();
+        }
 
-        const route = url.split("?")[0].replace(/\/+$/, "");
+        const route = url.split("?")[0].replace(TRAILING_SLASHES, "");
         // Only allow simple route names; block path traversal.
-        if (!/^\/api\/[a-zA-Z0-9_-]+$/.test(route)) return next();
+        if (!API_ROUTE.test(route)) {
+          return next();
+        }
 
         const devReq = req as DevReq;
-        const devRes = res as DevRes;
-        devRes.status = (code) => {
-          res.statusCode = code;
-          return devRes;
-        };
-        devRes.json = (payload) => {
-          res.setHeader("content-type", "application/json");
-          res.end(JSON.stringify(payload));
-          return devRes;
-        };
-        devRes.send = (payload) => {
-          res.end(typeof payload === "string" ? payload : JSON.stringify(payload));
-          return devRes;
-        };
+        const devRes = withResponseHelpers(res);
 
         try {
-          const chunks: Buffer[] = [];
-          for await (const chunk of req) chunks.push(chunk as Buffer);
-          const raw = Buffer.concat(chunks).toString("utf8");
-          devReq.body = raw ? JSON.parse(raw) : {};
+          devReq.body = await readJsonBody(req);
           devReq.query = Object.fromEntries(
-            new URL(url, "http://localhost").searchParams,
+            new URL(url, "http://localhost").searchParams
           );
 
           const mod = await server.ssrLoadModule(`${route}.ts`);
           const handler = mod.default as ApiHandler | undefined;
           if (typeof handler !== "function") {
-            res.statusCode = 404;
-            devRes.json({ error: "not_found" });
+            devRes.status(404).json({ error: "not_found" });
             return;
           }
           await handler(devReq, devRes);
         } catch (error) {
           server.config.logger.error(`[dev-api] ${route}: ${String(error)}`);
-          res.statusCode = 500;
-          devRes.json({
+          devRes.status(500).json({
             error: "dev_api_error",
             message: error instanceof Error ? error.message : "Unknown error",
           });
@@ -82,7 +98,9 @@ export default defineConfig(({ mode }) => {
   // to the in-process API handlers via process.env.
   const env = loadEnv(mode, process.cwd(), "");
   for (const [key, value] of Object.entries(env)) {
-    if (process.env[key] === undefined) process.env[key] = value;
+    if (process.env[key] === undefined) {
+      process.env[key] = value;
+    }
   }
 
   return {
@@ -93,7 +111,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), devApiPlugin()],
     resolve: {
       alias: {
-        "@": path.resolve(__dirname, "./src"),
+        "@": path.resolve(import.meta.dirname, "./src"),
       },
     },
   };

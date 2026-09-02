@@ -1,4 +1,4 @@
-import {
+import type {
   FactCheckReport,
   ReportClaim,
   Verdict,
@@ -26,8 +26,8 @@ type InputType = "url" | "statement";
 type SubmitSource = "manual" | "example";
 
 interface TikTokVideoMeta {
-  video_id: string | null;
   video_author: string | null;
+  video_id: string | null;
 }
 
 const NO_VIDEO: TikTokVideoMeta = { video_id: null, video_author: null };
@@ -37,10 +37,14 @@ const SHORT = /(?:vm|vt)\.tiktok\.com\/(\w+)/i;
 
 export const parseTikTokVideo = (url: string): TikTokVideoMeta => {
   const standard = url.match(STANDARD);
-  if (standard) return { video_author: standard[1], video_id: standard[2] };
+  if (standard) {
+    return { video_author: standard[1], video_id: standard[2] };
+  }
 
   const short = url.match(SHORT);
-  if (short) return { video_author: null, video_id: short[1] };
+  if (short) {
+    return { video_author: null, video_id: short[1] };
+  }
 
   return NO_VIDEO;
 };
@@ -52,7 +56,9 @@ const countVerdicts = (claims: ReportClaim[]): Record<Verdict, number> => {
     teils_teils: 0,
     nicht_pruefbar: 0,
   };
-  for (const claim of claims) counts[claim.urteil] += 1;
+  for (const claim of claims) {
+    counts[claim.urteil] += 1;
+  }
   return counts;
 };
 
@@ -155,7 +161,7 @@ export const trackFollowupAsked = (question: string): void => {
 
 export const trackFollowupAnswered = (
   question: string,
-  answer: string,
+  answer: string
 ): void => {
   posthog.capture("followup_question_answered", {
     question_text: truncate(question.trim()),

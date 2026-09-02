@@ -1,12 +1,14 @@
-import { trackSourceClicked } from "@/lib/analytics";
 import { AlertTriangle } from "lucide-react";
-import { ClaimCardProps } from "./types";
+import { trackSourceClicked } from "@/lib/analytics";
+import type { ClaimCardProps } from "./types";
 import { safeHttpUrl, verdictToStatus } from "./utils";
-import { VerdictBadge } from "./VerdictBadge";
+import { VerdictBadge } from "./verdict-badge";
+
+const WWW_PREFIX = /^www\./;
 
 const hostname = (url: string): string | null => {
   try {
-    return new URL(url).hostname.replace(/^www\./, "");
+    return new URL(url).hostname.replace(WWW_PREFIX, "");
   } catch {
     return null;
   }
@@ -20,7 +22,7 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
       <div className="min-w-0 space-y-3">
         {/* Verdict + manipulation, combined on top */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="mr-1 font-mono text-xs text-muted-foreground">
+          <span className="mr-1 font-mono text-muted-foreground text-xs">
             {String(index + 1).padStart(2, "0")}
           </span>
           <VerdictBadge status={status} />
@@ -37,17 +39,17 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
           )}
         </div>
 
-        <blockquote className="border-l-2 border-border pl-3 font-display text-[0.95rem] font-semibold leading-snug [overflow-wrap:anywhere]">
+        <blockquote className="border-border border-l-2 pl-3 font-display font-semibold text-[0.95rem] leading-snug [overflow-wrap:anywhere]">
           {claim.behauptung}
         </blockquote>
 
         {/* Explanation and research, merged into one flow */}
         <div className="space-y-1.5">
-          <p className="font-body text-sm leading-relaxed text-foreground/90 [overflow-wrap:anywhere]">
+          <p className="font-body text-foreground/90 text-sm leading-relaxed [overflow-wrap:anywhere]">
             {claim.erklaerung}
           </p>
           {claim.belege && (
-            <p className="font-body text-sm leading-relaxed text-muted-foreground [overflow-wrap:anywhere]">
+            <p className="font-body text-muted-foreground text-sm leading-relaxed [overflow-wrap:anywhere]">
               <span className="font-medium text-foreground/70">
                 Recherche:{" "}
               </span>
@@ -58,7 +60,7 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
 
         {/* Sources */}
         {claim.quellen.length > 0 && (
-          <div className="border-t border-border pt-3">
+          <div className="border-border border-t pt-3">
             <p className="eyebrow mb-2">Quellen</p>
             <ul className="space-y-1.5">
               {claim.quellen.map((source, i) => {
@@ -67,8 +69,8 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
                 if (!href) {
                   return (
                     <li
-                      key={`${i}-${source.titel}`}
-                      className="flex gap-2 font-body text-sm text-muted-foreground [overflow-wrap:anywhere]"
+                      className="flex gap-2 font-body text-muted-foreground text-sm [overflow-wrap:anywhere]"
+                      key={`${source.titel}|${source.url}`}
                     >
                       <span className="font-mono text-[0.7rem] text-muted-foreground/70">
                         {num}
@@ -79,11 +81,10 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
                 }
                 const host = hostname(href);
                 return (
-                  <li key={`${i}-${source.titel}`}>
+                  <li key={`${source.titel}|${source.url}`}>
                     <a
+                      className="group/src flex gap-2 font-body text-sm"
                       href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       onClick={() =>
                         trackSourceClicked({
                           url: href,
@@ -92,7 +93,8 @@ export const ClaimCard = ({ claim, index }: ClaimCardProps) => {
                           claimIndex: index,
                         })
                       }
-                      className="group/src flex gap-2 font-body text-sm"
+                      rel="noopener noreferrer"
+                      target="_blank"
                     >
                       <span className="font-mono text-[0.7rem] text-muted-foreground/70">
                         {num}

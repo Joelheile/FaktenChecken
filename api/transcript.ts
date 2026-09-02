@@ -1,5 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { CheckMeta, checkRateLimit, persistCheckError } from "./_db.js";
+import { type CheckMeta, checkRateLimit, persistCheckError } from "./_db.js";
+
+const VTT_TIMESTAMP = /^\d{2}:\d{2}:\d{2}/;
+const DIGITS_ONLY = /^\d+$/;
 
 export const config = {
   maxDuration: 120,
@@ -11,9 +14,9 @@ const ACTOR_ID = "emQXBCL3xePZYgJyn";
 const ACTOR_TIMEOUT_SECS = 100;
 
 interface ApifyDatasetItem {
-  transcript?: string;
   subtitles?: string[];
   text?: string;
+  transcript?: string;
 }
 
 function processWebVTT(vtt: string): string {
@@ -21,10 +24,18 @@ function processWebVTT(vtt: string): string {
   const filtered = lines
     .filter((line) => {
       const trimmed = line.trim();
-      if (!trimmed) return false;
-      if (trimmed.startsWith("WEBVTT")) return false;
-      if (/^\d{2}:\d{2}:\d{2}/.test(trimmed)) return false;
-      if (trimmed.includes("-->")) return false;
+      if (!trimmed) {
+        return false;
+      }
+      if (trimmed.startsWith("WEBVTT")) {
+        return false;
+      }
+      if (VTT_TIMESTAMP.test(trimmed)) {
+        return false;
+      }
+      if (trimmed.includes("-->")) {
+        return false;
+      }
       return true;
     })
     .map((line) => line.trim())
@@ -37,13 +48,17 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
   // Check transcript (WebVTT format)
   if (item.transcript) {
     const processed = processWebVTT(item.transcript);
-    if (processed) return processed;
+    if (processed) {
+      return processed;
+    }
   }
 
   // Check subtitles array
   if (item.subtitles && Array.isArray(item.subtitles)) {
     const joined = item.subtitles.join(" ").trim();
-    if (joined) return joined;
+    if (joined) {
+      return joined;
+    }
   }
 
   // Check text
@@ -62,12 +77,14 @@ function extractTranscript(item: ApifyDatasetItem): string | null {
 async function resolveVideoId(url: string): Promise<string | null> {
   try {
     const res = await fetch(
-      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`,
+      `https://www.tiktok.com/oembed?url=${encodeURIComponent(url)}`
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      return null;
+    }
     const data = (await res.json()) as { embed_product_id?: unknown };
     const id = data.embed_product_id;
-    return typeof id === "string" && /^\d+$/.test(id) ? id : null;
+    return typeof id === "string" && DIGITS_ONLY.test(id) ? id : null;
   } catch {
     return null;
   }
@@ -76,7 +93,9 @@ async function resolveVideoId(url: string): Promise<string | null> {
 function isTikTokUrl(url: string): boolean {
   try {
     const { protocol, hostname } = new URL(url);
-    if (protocol !== "https:") return false;
+    if (protocol !== "https:") {
+      return false;
+    }
     const host = hostname.toLowerCase();
     return host === "tiktok.com" || host.endsWith(".tiktok.com");
   } catch {
@@ -84,9 +103,57 @@ function isTikTokUrl(url: string): boolean {
   }
 }
 
+async function recordFailure(
+  req: VercelRequest,
+  checkMeta: CheckMeta | null,
+  message: string
+): Promise<void> {
+  if (!checkMeta) {
+    return;
+  }
+  try {
+    await persistCheckError(req, checkMeta, message, "", "transcript");
+  } catch (dbError) {
+    console.error("Failed to persist transcript error:", dbError);
+  }
+}
+
+// Single synchronous call: run the actor and get its dataset items back.
+// Apify blocks until the run finishes, so no manual polling loop is needed.
+async function fetchTranscript(
+  url: string,
+  apiToken: string
+): Promise<string | null> {
+  const response = await fetch(
+    `${APIFY_BASE_URL}/acts/${ACTOR_ID}/run-sync-get-dataset-items?timeout=${ACTOR_TIMEOUT_SECS}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiToken}`,
+      },
+      body: JSON.stringify({ videos: [url] }),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(
+      `Apify run failed: ${response.status} ${response.statusText}`
+    );
+  }
+
+  const items: ApifyDatasetItem[] = await response.json();
+
+  if (!Array.isArray(items) || items.length === 0) {
+    throw new Error("No data returned from actor");
+  }
+
+  return extractTranscript(items[0]);
+}
+
 export default async function handler(
   req: VercelRequest,
-  res: VercelResponse,
+  res: VercelResponse
 ): Promise<void> {
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" });
@@ -123,49 +190,10 @@ export default async function handler(
   try {
     // Resolve the embeddable video id concurrently with the (slow) actor run.
     const videoIdPromise = resolveVideoId(url);
-
-    // Single synchronous call: run the actor and get its dataset items back.
-    // Apify blocks until the run finishes, so no manual polling loop is needed.
-    const response = await fetch(
-      `${APIFY_BASE_URL}/acts/${ACTOR_ID}/run-sync-get-dataset-items?timeout=${ACTOR_TIMEOUT_SECS}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiToken}`,
-        },
-        body: JSON.stringify({ videos: [url] }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(
-        `Apify run failed: ${response.status} ${response.statusText}`,
-      );
-    }
-
-    const items: ApifyDatasetItem[] = await response.json();
-
-    if (!Array.isArray(items) || items.length === 0) {
-      throw new Error("No data returned from actor");
-    }
-
-    const transcript = extractTranscript(items[0]);
+    const transcript = await fetchTranscript(url, apiToken);
 
     if (!transcript) {
-      if (checkMeta) {
-        try {
-          await persistCheckError(
-            req,
-            checkMeta,
-            "no transcript",
-            "",
-            "transcript",
-          );
-        } catch (dbError) {
-          console.error("Failed to persist transcript error:", dbError);
-        }
-      }
+      await recordFailure(req, checkMeta, "no transcript");
       res.status(422).json({
         error: "no_transcript",
         message:
@@ -177,18 +205,13 @@ export default async function handler(
     res.status(200).json({ transcript, videoId: await videoIdPromise });
   } catch (error) {
     console.error("Error processing request:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-
     // Record the uncheckable video (private, deleted, no captions, actor
     // timeout) so the failure population isn't lost to the dataset.
-    if (checkMeta) {
-      try {
-        await persistCheckError(req, checkMeta, message, "", "transcript");
-      } catch (dbError) {
-        console.error("Failed to persist transcript error:", dbError);
-      }
-    }
-
+    await recordFailure(
+      req,
+      checkMeta,
+      error instanceof Error ? error.message : "Unknown error"
+    );
     res.status(500).json({
       error: "transcript_failed",
       message:

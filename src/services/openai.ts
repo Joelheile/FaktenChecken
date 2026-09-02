@@ -1,22 +1,22 @@
-import { FactCheckReport } from "@/components/fact-check/types";
+import type { FactCheckReport } from "@/components/fact-check/types";
 
 interface Message {
-  role: string;
   content: string;
+  role: string;
 }
 
 /** Anonymous identity + context attached to a fact check for the dataset. */
 export interface CheckMeta {
-  check_id: string;
-  session_id: string;
-  visitor_id: string;
-  input: "url" | "statement";
-  query: string | null;
-  video_url: string | null;
-  video_id: string | null;
   author: string | null;
-  referrer: string | null;
+  check_id: string;
+  input: "url" | "statement";
   lang: string | null;
+  query: string | null;
+  referrer: string | null;
+  session_id: string;
+  video_id: string | null;
+  video_url: string | null;
+  visitor_id: string;
 }
 
 let currentConversationMessages: Message[] = [];
@@ -26,7 +26,7 @@ let currentSession: string | null = null;
 export async function performFactCheck(
   transcript: string,
   statement: string | undefined,
-  meta?: CheckMeta,
+  meta?: CheckMeta
 ): Promise<FactCheckReport> {
   if (
     (!transcript || transcript.trim().length < 5) &&
@@ -65,7 +65,7 @@ export async function performFactCheck(
 export async function askFollowupQuestion(question: string): Promise<string> {
   if (currentConversationMessages.length === 0) {
     throw new Error(
-      "Keine aktive Konversation gefunden. Bitte führen Sie zuerst einen Faktencheck durch.",
+      "Keine aktive Konversation gefunden. Bitte führen Sie zuerst einen Faktencheck durch."
     );
   }
 

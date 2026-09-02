@@ -1,21 +1,27 @@
-import { FactCheckResult } from "@/components/fact-check";
-import { Footer, Header, ProgressIndicator } from "@/components/home";
-import { TikTokInput } from "@/components/tiktok-input";
+import { ArrowLeft } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { FactCheckResult } from "@/components/fact-check/fact-check-result";
+import { Footer } from "@/components/home/footer";
+import { Header } from "@/components/home/header";
+import { ProgressIndicator } from "@/components/home/progress-indicator";
+import { TikTokInput } from "@/components/tiktok-input/tiktok-input";
 import {
   trackFactCheckCompleted,
   trackFactCheckError,
   trackFactCheckSubmitted,
   trackImpressumClicked,
 } from "@/lib/analytics";
-import { FactCheckResponse, transcribeAndFactCheck } from "@/services/api";
-import { ArrowLeft } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import {
+  ApiError,
+  type FactCheckResponse,
+  transcribeAndFactCheck,
+} from "@/services/api";
 
 export const HomePage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [factCheckData, setFactCheckData] = useState<FactCheckResponse | null>(
-    null,
+    null
   );
   const [progress, setProgress] = useState(0);
   const [progressMessage, setProgressMessage] = useState("");
@@ -23,7 +29,7 @@ export const HomePage = () => {
   const handleSubmit = async (
     url: string,
     statement?: string,
-    source: "manual" | "example" = "manual",
+    source: "manual" | "example" = "manual"
   ) => {
     setIsLoading(true);
     setProgress(0);
@@ -32,7 +38,7 @@ export const HomePage = () => {
     setProgressMessage(
       hasUrl
         ? "TikTok Video wird geladen..."
-        : "Faktencheck wird vorbereitet...",
+        : "Faktencheck wird vorbereitet..."
     );
 
     trackFactCheckSubmitted({ url, statement, source });
@@ -55,6 +61,8 @@ export const HomePage = () => {
           case "analyzing":
             creepCap = hasUrl ? 90 : 85;
             setProgressMessage("Internet wird nach Fakten durchsucht...");
+            break;
+          default:
             break;
         }
       });
@@ -80,10 +88,7 @@ export const HomePage = () => {
 
       if (error instanceof Error) {
         errorMessage = error.message;
-        errorType =
-          error.name === "ApiError"
-            ? (error as Error & { type?: string }).type
-            : "";
+        errorType = error instanceof ApiError ? error.type : "";
       }
 
       toast.error(errorMessage);
@@ -111,27 +116,27 @@ export const HomePage = () => {
 
         <main className="mt-10 flex flex-col">
           {progress > 0 && (
-            <ProgressIndicator progress={progress} message={progressMessage} />
+            <ProgressIndicator message={progressMessage} progress={progress} />
           )}
 
           {!factCheckData && (
-            <TikTokInput onSubmit={handleSubmit} isLoading={isLoading} />
+            <TikTokInput isLoading={isLoading} onSubmit={handleSubmit} />
           )}
 
           {factCheckData && (
             <div className="w-full">
               <button
-                type="button"
+                className="mb-6 inline-flex items-center gap-1.5 font-body font-medium text-muted-foreground text-sm transition-colors hover:text-foreground"
                 onClick={handleReset}
-                className="mb-6 inline-flex items-center gap-1.5 font-body text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                type="button"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Neue Prüfung
               </button>
               <FactCheckResult
+                isLoading={isLoading}
                 report={factCheckData.report}
                 videoId={factCheckData.videoId}
-                isLoading={isLoading}
               />
             </div>
           )}

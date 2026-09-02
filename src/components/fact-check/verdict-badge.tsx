@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { VerdictBadgeProps } from "./types";
+import type { VerdictBadgeProps } from "./types";
 import { VERDICT_META } from "./utils";
 
 export const VerdictBadge = ({ status, size = "sm" }: VerdictBadgeProps) => {
@@ -15,7 +15,7 @@ export const VerdictBadge = ({ status, size = "sm" }: VerdictBadgeProps) => {
         meta.fill,
         size === "lg"
           ? "gap-2 px-4 py-1.5 text-sm shadow-soft"
-          : "px-2.5 py-1 text-[0.7rem]",
+          : "px-2.5 py-1 text-[0.7rem]"
       )}
     >
       <Icon

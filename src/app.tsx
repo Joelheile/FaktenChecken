@@ -1,6 +1,3 @@
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { posthog } from "@/lib/posthog";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 import {
@@ -9,9 +6,12 @@ import {
   Routes as RouterRoutes,
   useLocation,
 } from "react-router-dom";
-import Impressum from "./pages/Impressum";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { posthog } from "@/lib/posthog";
+import { HomePage } from "./pages/home";
+import Impressum from "./pages/impressum";
+import NotFound from "./pages/not-found";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,9 +42,9 @@ const AppRoutes = () => (
   <>
     <PageViewTracker />
     <RouterRoutes>
-      <Route path="/" element={<Index />} />
-      <Route path="/impressum" element={<Impressum />} />
-      <Route path="*" element={<NotFound />} />
+      <Route element={<HomePage />} path="/" />
+      <Route element={<Impressum />} path="/impressum" />
+      <Route element={<NotFound />} path="*" />
     </RouterRoutes>
   </>
 );

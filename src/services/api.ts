@@ -1,10 +1,10 @@
-import { FactCheckReport } from "@/components/fact-check/types";
+import type { FactCheckReport } from "@/components/fact-check/types";
 import { parseTikTokVideo } from "@/lib/analytics";
 import { getSessionId, getVisitorId, newCheckId } from "@/lib/ids";
 import { fetchTikTokTranscript } from "./apify";
 import {
   askFollowupQuestion as askOpenAIFollowup,
-  CheckMeta,
+  type CheckMeta,
   performFactCheck,
   resetConversation,
 } from "./openai";
@@ -13,10 +13,10 @@ import {
  * Response structure for fact checking operations
  */
 export interface FactCheckResponse {
-  /** The transcript text extracted from the TikTok video */
-  transcript: string;
   /** The structured fact-checking report */
   report: FactCheckReport;
+  /** The transcript text extracted from the TikTok video */
+  transcript: string;
   /** Numeric TikTok id for embedding, null for statement-only checks */
   videoId: string | null;
 }
@@ -24,13 +24,16 @@ export interface FactCheckResponse {
 /**
  * Error types that can occur during API operations
  */
-export enum ApiErrorType {
-  TRANSCRIPTION_ERROR = "transcription_error",
-  FACT_CHECK_ERROR = "fact_check_error",
-  FOLLOWUP_ERROR = "followup_error",
-  NETWORK_ERROR = "network_error",
-  AUTH_ERROR = "auth_error",
-}
+export const ApiErrorType = {
+  TRANSCRIPTION_ERROR: "transcription_error",
+  FACT_CHECK_ERROR: "fact_check_error",
+  FOLLOWUP_ERROR: "followup_error",
+  NETWORK_ERROR: "network_error",
+  AUTH_ERROR: "auth_error",
+} as const;
+export type ApiErrorType = (typeof ApiErrorType)[keyof typeof ApiErrorType];
+
+const TRANSCRIPT_ERROR = /transkript|untertitel|video|erreichbar/i;
 
 /**
  * Custom error class for API-related errors
@@ -60,7 +63,7 @@ export type FactCheckProgress =
 export async function transcribeAndFactCheck(
   tiktokUrl: string,
   statement?: string,
-  onProgress?: (progress: FactCheckProgress) => void,
+  onProgress?: (progress: FactCheckProgress) => void
 ): Promise<FactCheckResponse> {
   resetConversation();
 
@@ -102,7 +105,7 @@ export async function transcribeAndFactCheck(
   } catch (error) {
     if (error instanceof Error) {
       const message = error.message;
-      const type = /transkript|untertitel|video|erreichbar/i.test(message)
+      const type = TRANSCRIPT_ERROR.test(message)
         ? ApiErrorType.TRANSCRIPTION_ERROR
         : ApiErrorType.NETWORK_ERROR;
       // Surface the (already German, user-facing) message as-is.
@@ -111,7 +114,7 @@ export async function transcribeAndFactCheck(
 
     throw new ApiError(
       "Bei der Analyse ist ein Fehler aufgetreten.",
-      ApiErrorType.NETWORK_ERROR,
+      ApiErrorType.NETWORK_ERROR
     );
   }
 }
@@ -126,7 +129,7 @@ export async function askFollowupQuestion(question: string): Promise<string> {
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new ApiError(
       `Failed to answer follow-up question: ${errorMessage}`,
-      ApiErrorType.FOLLOWUP_ERROR,
+      ApiErrorType.FOLLOWUP_ERROR
     );
   }
 }

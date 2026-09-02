@@ -12,7 +12,9 @@ const SESSION_KEY = "fc_session";
 
 const read = (storage: Storage, key: string): string => {
   const existing = storage.getItem(key);
-  if (existing) return existing;
+  if (existing) {
+    return existing;
+  }
   const id = crypto.randomUUID();
   storage.setItem(key, id);
   return id;

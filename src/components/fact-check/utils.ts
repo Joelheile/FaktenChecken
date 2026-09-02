@@ -2,10 +2,10 @@ import {
   AlertTriangle,
   CheckCircle2,
   HelpCircle,
-  LucideIcon,
+  type LucideIcon,
   XCircle,
 } from "lucide-react";
-import { Verdict, VerdictStatus } from "./types";
+import type { Verdict, VerdictStatus } from "./types";
 
 const VERDICT_STATUS: Record<Verdict, VerdictStatus> = {
   wahr: "true",
@@ -18,19 +18,19 @@ export const verdictToStatus = (verdict: Verdict): VerdictStatus =>
   VERDICT_STATUS[verdict] ?? "unknown";
 
 export interface VerdictMeta {
-  /** Short pill label, e.g. "Wahr" */
-  label: string;
-  /** Sentence label used in the hero verdict, e.g. "Das stimmt" */
-  headline: string;
-  icon: LucideIcon;
-  /** Foreground colour class for icon + text */
-  text: string;
   /** Border colour class */
   border: string;
   /** Soft fill class for pills */
   fill: string;
+  /** Sentence label used in the hero verdict, e.g. "Das stimmt" */
+  headline: string;
+  icon: LucideIcon;
+  /** Short pill label, e.g. "Wahr" */
+  label: string;
   /** Solid background class for the colour rail */
   solid: string;
+  /** Foreground colour class for icon + text */
+  text: string;
   /** Very soft tint for the hero card background */
   tint: string;
 }

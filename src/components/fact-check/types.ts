@@ -9,30 +9,30 @@ export interface Source {
 
 export interface ReportClaim {
   behauptung: string;
-  urteil: Verdict;
-  erklaerung: string;
   belege: string;
+  erklaerung: string;
   manipulation: string | null;
   quellen: Source[];
+  urteil: Verdict;
 }
 
 export interface FactCheckReport {
-  quelle_sprache: string;
-  gesamturteil: Verdict;
-  fazit: string;
-  vorsicht: string;
   behauptungen: ReportClaim[];
+  fazit: string;
+  gesamturteil: Verdict;
+  quelle_sprache: string;
   selbst_pruefen: string;
+  vorsicht: string;
 }
 
 export interface Followup {
-  question: string;
   answer: string;
+  question: string;
 }
 
 export interface VerdictBadgeProps {
-  status: VerdictStatus;
   size?: "sm" | "lg";
+  status: VerdictStatus;
 }
 
 export interface ClaimCardProps {
@@ -41,14 +41,14 @@ export interface ClaimCardProps {
 }
 
 export interface FollowupQuestionProps {
-  question: string;
   answer: string;
   index: number;
+  question: string;
 }
 
 export interface FollowupFormProps {
+  isSubmitting: boolean;
+  onChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => Promise<void>;
   question: string;
-  onChange: (value: string) => void;
-  isSubmitting: boolean;
 }

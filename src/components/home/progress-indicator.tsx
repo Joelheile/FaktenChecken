@@ -1,6 +1,6 @@
 interface ProgressIndicatorProps {
-  progress: number;
   message: string;
+  progress: number;
 }
 
 export const ProgressIndicator = ({
@@ -10,13 +10,13 @@ export const ProgressIndicator = ({
   <div className="fade-in mb-6 w-full">
     <div className="rounded-xl border border-border bg-card p-4 shadow-soft">
       <div className="mb-2.5 flex items-baseline justify-between gap-3">
-        <span className="font-mono text-xs leading-relaxed text-foreground">
+        <span className="font-mono text-foreground text-xs leading-relaxed">
           <span className="mr-1 inline-block animate-pulse text-primary">
             ▸
           </span>
           {message}
         </span>
-        <span className="font-mono text-sm font-bold tabular-nums text-primary">
+        <span className="font-bold font-mono text-primary text-sm tabular-nums">
           {Math.round(progress)}%
         </span>
       </div>
