@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import {
   type CheckMeta,
   type CheckUsage,
@@ -8,11 +7,7 @@ import {
   persistCheck,
   persistCheckError,
   type Report,
-} from "./_db.js";
-
-export const config = {
-  maxDuration: 120,
-};
+} from "./db.js";
 
 const MODEL = "gpt-5-mini";
 
@@ -316,20 +311,22 @@ async function requestReport(apiKey: string, userPrompt: string) {
   return { data, report: JSON.parse(extractOutputText(data)) as Report };
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
+interface FactCheckBody {
+  meta?: CheckMeta;
+  statement?: unknown;
+  transcript?: unknown;
+}
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   const {
     transcript: rawTranscript,
     statement: rawStatement,
     meta,
-  } = req.body || {};
+  } = (await req.json<FactCheckBody>().catch(() => null)) ?? {};
   const transcript =
     typeof rawTranscript === "string"
       ? rawTranscript.slice(0, MAX_TRANSCRIPT_CHARS)
@@ -342,10 +339,10 @@ export default async function handler(
   const hasStatement = statement.trim().length >= 3;
 
   if (!(hasTranscript || hasStatement)) {
-    res
-      .status(400)
-      .json({ error: "Either transcript or statement is required" });
-    return;
+    return Response.json(
+      { error: "Either transcript or statement is required" },
+      { status: 400 }
+    );
   }
 
   // Persistence only runs when the client sends valid, anonymous identity meta.
@@ -380,24 +377,25 @@ export default async function handler(
         )
       );
     }
-    res.status(200).json({ report: cached });
-    return;
+    return Response.json({ report: cached });
   }
 
   if (!(await checkRateLimit(req, "fact-check", 20, 3600))) {
-    res.status(429).json({
-      error: "Too many requests",
-      message: "Zu viele Anfragen. Bitte versuche es später erneut.",
-    });
-    return;
+    return Response.json(
+      {
+        error: "Too many requests",
+        message: "Zu viele Anfragen. Bitte versuche es später erneut.",
+      },
+      { status: 429 }
+    );
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    res
-      .status(500)
-      .json({ error: "Server configuration error: missing OpenAI API key" });
-    return;
+    return Response.json(
+      { error: "Server configuration error: missing OpenAI API key" },
+      { status: 500 }
+    );
   }
 
   try {
@@ -418,7 +416,7 @@ export default async function handler(
       );
     }
 
-    res.status(200).json({ report });
+    return Response.json({ report });
   } catch (error) {
     console.error("Error during fact check:", error);
     if (checkMeta) {
@@ -432,6 +430,9 @@ export default async function handler(
         )
       );
     }
-    res.status(500).json({ error: "Failed to perform fact check" });
+    return Response.json(
+      { error: "Failed to perform fact check" },
+      { status: 500 }
+    );
   }
 }

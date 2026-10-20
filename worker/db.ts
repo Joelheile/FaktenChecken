@@ -1,5 +1,4 @@
 import { neon } from "@neondatabase/serverless";
-import type { VercelRequest } from "@vercel/node";
 
 /**
  * Server-side writes to the Neon analytics dataset.
@@ -63,25 +62,17 @@ interface RequestContext {
   os: string;
 }
 
-const header = (req: VercelRequest, name: string): string => {
-  const value = req.headers[name];
-  return Array.isArray(value) ? (value[0] ?? "") : (value ?? "");
-};
+const header = (req: Request, name: string): string =>
+  req.headers.get(name) ?? "";
 
 /** Truncate untrusted client strings before they reach the database. */
 const cap = (value: string | null | undefined, max: number): string | null =>
   value == null ? null : value.slice(0, max);
 
-const clientIp = (req: VercelRequest): string => {
-  // x-real-ip is set by the Vercel edge to the true peer address, so it can't
-  // be forged by a client prepending its own x-forwarded-for to rotate IPs.
-  const real = header(req, "x-real-ip");
-  if (real) {
-    return real;
-  }
-  const forwarded = header(req, "x-forwarded-for");
-  return forwarded ? forwarded.split(",")[0].trim() : "unknown";
-};
+// cf-connecting-ip is set by Cloudflare to the true peer address, so it can't
+// be forged by a client prepending its own x-forwarded-for to rotate IPs.
+const clientIp = (req: Request): string =>
+  header(req, "cf-connecting-ip") || "unknown";
 
 /**
  * Fixed-window per-IP rate limit. Returns true if the request is allowed.
@@ -91,7 +82,7 @@ const clientIp = (req: VercelRequest): string => {
  * keyed per endpoint so each paid API has its own budget.
  */
 export const checkRateLimit = async (
-  req: VercelRequest,
+  req: Request,
   endpoint: string,
   limit: number,
   windowSeconds: number
@@ -151,10 +142,10 @@ const parseBrowser = (ua: string): string =>
 
 const parseOs = (ua: string): string => firstMatch(OS_RULES, ua, "Other");
 
-const requestContext = (req: VercelRequest): RequestContext => {
+const requestContext = (req: Request): RequestContext => {
   const ua = header(req, "user-agent");
   return {
-    country: header(req, "x-vercel-ip-country") || null,
+    country: header(req, "cf-ipcountry") || null,
     device: parseDevice(ua),
     browser: parseBrowser(ua),
     os: parseOs(ua),
@@ -200,7 +191,7 @@ export const lookupCachedReport = async (
 };
 
 export const persistCheck = async (
-  req: VercelRequest,
+  req: Request,
   meta: CheckMeta,
   report: Report,
   transcript: string,
@@ -266,7 +257,7 @@ export const persistCheck = async (
 };
 
 export const persistCheckError = async (
-  req: VercelRequest,
+  req: Request,
   meta: CheckMeta,
   message: string,
   transcript: string,
