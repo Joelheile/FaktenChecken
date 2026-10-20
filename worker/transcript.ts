@@ -1,12 +1,7 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { type CheckMeta, checkRateLimit, persistCheckError } from "./_db.js";
+import { type CheckMeta, checkRateLimit, persistCheckError } from "./db.js";
 
 const VTT_TIMESTAMP = /^\d{2}:\d{2}:\d{2}/;
 const DIGITS_ONLY = /^\d+$/;
-
-export const config = {
-  maxDuration: 120,
-};
 
 const APIFY_BASE_URL = "https://api.apify.com/v2";
 const ACTOR_ID = "emQXBCL3xePZYgJyn";
@@ -93,7 +88,7 @@ function isTikTokUrl(url: string): boolean {
 }
 
 async function recordFailure(
-  req: VercelRequest,
+  req: Request,
   checkMeta: CheckMeta | null,
   message: string
 ): Promise<void> {
@@ -140,27 +135,33 @@ async function fetchTranscript(
   return extractTranscript(items[0]);
 }
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-): Promise<void> {
+interface TranscriptBody {
+  meta?: CheckMeta;
+  url?: unknown;
+}
+
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
-    res.status(405).json({ error: "Method not allowed" });
-    return;
+    return Response.json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  const { url, meta } = req.body || {};
+  const { url, meta } =
+    (await req.json<TranscriptBody>().catch(() => null)) ?? {};
   if (!url || typeof url !== "string" || !isTikTokUrl(url)) {
-    res.status(400).json({ error: "Missing or invalid TikTok url" });
-    return;
+    return Response.json(
+      { error: "Missing or invalid TikTok url" },
+      { status: 400 }
+    );
   }
 
   if (!(await checkRateLimit(req, "transcript", 20, 3600))) {
-    res.status(429).json({
-      error: "Too many requests",
-      message: "Zu viele Anfragen. Bitte versuche es später erneut.",
-    });
-    return;
+    return Response.json(
+      {
+        error: "Too many requests",
+        message: "Zu viele Anfragen. Bitte versuche es später erneut.",
+      },
+      { status: 429 }
+    );
   }
 
   // Only used to record a failed check: the success path is persisted by
@@ -170,10 +171,10 @@ export default async function handler(
 
   const apiToken = process.env.APIFY_API_TOKEN;
   if (!apiToken) {
-    res
-      .status(500)
-      .json({ error: "Server configuration error: missing API token" });
-    return;
+    return Response.json(
+      { error: "Server configuration error: missing API token" },
+      { status: 500 }
+    );
   }
 
   try {
@@ -183,15 +184,17 @@ export default async function handler(
 
     if (!transcript) {
       await recordFailure(req, checkMeta, "no transcript");
-      res.status(422).json({
-        error: "no_transcript",
-        message:
-          "Dieses Video hat keinen Text zum Prüfen. Es wurden keine Untertitel oder gesprochene Sprache gefunden. Probiere ein Video, in dem jemand spricht.",
-      });
-      return;
+      return Response.json(
+        {
+          error: "no_transcript",
+          message:
+            "Dieses Video hat keinen Text zum Prüfen. Es wurden keine Untertitel oder gesprochene Sprache gefunden. Probiere ein Video, in dem jemand spricht.",
+        },
+        { status: 422 }
+      );
     }
 
-    res.status(200).json({ transcript, videoId: await videoIdPromise });
+    return Response.json({ transcript, videoId: await videoIdPromise });
   } catch (error) {
     console.error("Error processing request:", error);
     // Record the uncheckable video (private, deleted, no captions, actor
@@ -201,10 +204,13 @@ export default async function handler(
       checkMeta,
       error instanceof Error ? error.message : "Unknown error"
     );
-    res.status(500).json({
-      error: "transcript_failed",
-      message:
-        "Das Transkript konnte gerade nicht geladen werden. Bitte versuche es in einem Moment erneut.",
-    });
+    return Response.json(
+      {
+        error: "transcript_failed",
+        message:
+          "Das Transkript konnte gerade nicht geladen werden. Bitte versuche es in einem Moment erneut.",
+      },
+      { status: 500 }
+    );
   }
 }
